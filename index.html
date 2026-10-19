@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dukan Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1b1f3b;--paper:#fff8ec;--gold:#f2a900;--teal:#0e7c7b;--chili:#d1344b;--sky:#3a7bd5;--card:#fff;--line:#eadfc8;--btn:#1b1f3b}
+*{box-sizing:border-box;margin:0}
+body{font-family:"Trebuchet MS",system-ui,sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
+#app{max-width:480px;margin:auto;min-height:100vh;position:relative}
+.screen{display:none;padding:18px 16px 90px;min-height:100vh;flex-direction:column;gap:12px}
+.screen.on{display:flex}
+h1{font-size:2rem;line-height:1.15}h2{font-size:1.3rem}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:12px 16px;background:var(--btn);color:#fff}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold)}
+.pill{border-radius:30px;background:var(--card);color:var(--ink);border:2px solid var(--ink);font-size:1.1rem;padding:14px}
+.pill.gold{background:var(--gold);border-color:var(--gold)}
+.sm{padding:6px 12px;font-size:.85rem}
+.top{display:flex;align-items:center;gap:10px}.top h2{flex:1}
+.back{background:var(--line);color:var(--ink);padding:8px 12px}
+input,select{font:inherit;padding:12px;border:2px solid var(--line);border-radius:12px;background:var(--card);width:100%}
+.row{display:flex;gap:8px;align-items:center}
+.safe{margin-top:auto;text-align:center;color:var(--teal);font-weight:bold}
+.err{color:var(--chili);min-height:1.2em}
+#langs{list-style:none;padding:0}#langs li{padding:14px 6px;border-bottom:1px solid var(--line);cursor:pointer}
+#langs li.cur{color:var(--teal);font-weight:bold}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{border-radius:16px;padding:14px;color:#fff}.stat b{display:block;font-size:1.5rem}
+.s1{background:var(--sky)}.s2{background:var(--teal)}
+.tiles{display:grid;gap:10px}
+.tile{padding:20px;font-size:1.15rem;text-align:left;color:#fff}
+.t1{background:var(--sky)}.t2{background:var(--teal)}.t3{background:var(--chili)}
+.bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:10px 16px;background:var(--card);border-top:2px solid var(--line);display:flex;gap:8px}
+.bar .pill{flex:1;text-align:left;font-size:1rem;color:#777}
+.chat{flex:1;display:flex;flex-direction:column;gap:8px;overflow:auto}
+.msg{padding:10px 14px;border-radius:14px;max-width:85%}
+.me{background:var(--gold);align-self:flex-end}.bot{background:var(--card);border:1px solid var(--line)}
+.inrow{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:10px 16px;background:var(--card);display:flex;gap:8px;border-top:2px solid var(--line)}
+.tabs{display:flex;gap:6px}.tabs button{flex:1;background:var(--line);color:var(--ink)}.tabs button.on{background:var(--btn);color:#fff}
+.total{background:var(--btn);color:#fff;border-radius:16px;padding:16px;font-size:1.3rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.card .row button{padding:6px 12px;font-size:.85rem}
+.card .row button:last-child{background:var(--chili)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.grid label{font-size:.8rem}
+.kh{display:flex;justify-content:space-between;padding:14px;background:var(--card);border-radius:12px;border:1px solid var(--line)}
+#vscreen{align-items:center;text-align:center}
+#blob{width:170px;height:170px;margin:40px auto 10px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#ffd86b,var(--chili) 55%,var(--sky));filter:blur(2px);transition:transform .3s}
+#blob.on{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.18);border-radius:44% 56% 52% 48%}}
+@media(prefers-reduced-motion:reduce){#blob.on{animation:none;transform:scale(1.1)}}
+#vtext{min-height:3em;padding:0 10px}
+
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+.bar,.inrow{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--ink:#f3ecdc;--paper:#16162a;--card:#232342;--line:#3a3a5c;--btn:#3d4290}}
+:root[data-theme="dark"]{color-scheme:dark;--ink:#f3ecdc;--paper:#16162a;--card:#232342;--line:#3a3a5c;--btn:#3d4290}
+
+/* ---------- 3D buttons ---------- */
+:root{--edge-btn:#0a0c1c;--edge-soft:#cdbf9d}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--edge-btn:#20245c;--edge-soft:#12122a}}
+:root[data-theme="dark"]{--edge-btn:#20245c;--edge-soft:#12122a}
+button{--d:5px;--edge:var(--edge-btn);position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 var(--d) 0 var(--edge),0 calc(var(--d) + 4px) 12px rgba(0,0,0,.22);transition:transform .08s ease,box-shadow .08s ease;-webkit-tap-highlight-color:transparent}
+button::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(to bottom,rgba(255,255,255,.3),rgba(255,255,255,0) 55%);pointer-events:none}
+button:active{transform:translateY(4px);--d:1px}
+button.sm{--d:3px}button.sm:active{transform:translateY(2px);--d:1px}
+.pill,.back,.tabs button{--edge:var(--edge-soft)}
+.tabs button.on{--edge:var(--edge-btn)}
+.pill.gold{--edge:#b57d00}
+.t1{--edge:#285a9f}.t2{--edge:#095453}.t3{--edge:#8f2234}
+.tile{text-shadow:0 1px 1px rgba(0,0,0,.3)}
+.card .row button:last-child{--edge:#8f2234}
+.tabs,.row{padding-bottom:5px}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
+
+/* ---------- Pro theme ---------- */
+:root{--grad:linear-gradient(135deg,#2a2d7c 0%,#4a3fb0 55%,#7b52d6 100%);--shadow:0 8px 24px rgba(27,31,59,.10)}
+body{font-family:"Poppins","Trebuchet MS",system-ui,sans-serif;background:radial-gradient(900px 420px at 50% -8%,rgba(242,169,0,.22),transparent 65%),var(--paper)}
+.screen.on{animation:rise .3s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+@media(prefers-reduced-motion:reduce){.screen.on{animation:none}}
+h1{font-size:2.1rem;font-weight:700;letter-spacing:-.5px}
+input,select{border-radius:14px;padding:14px;box-shadow:inset 0 2px 4px rgba(0,0,0,.05)}input:focus,select:focus{border-color:var(--gold)}
+.top.end{justify-content:flex-end}.spacer{flex:1}
+.hero{text-align:center;padding:26px 10px 6px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.hero h2{font-weight:500;opacity:.8;font-size:1.05rem}
+.logo{width:96px;height:96px;border-radius:28px;background:var(--grad);display:grid;place-items:center;font-size:3rem;box-shadow:0 14px 30px rgba(74,63,176,.35),inset 0 2px 0 rgba(255,255,255,.35)}
+.logo.mid{width:72px;height:72px;font-size:2.2rem;border-radius:22px;align-self:center;margin:6px 0}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.chips span{background:var(--card);border:1px solid var(--line);border-radius:30px;padding:6px 12px;font-size:.78rem;box-shadow:var(--shadow)}.chips b{font-weight:500}
+.pill.big{padding:16px;font-size:1.1rem;font-weight:600}
+.safe{font-size:.8rem}
+.banner{background:var(--grad);color:#fff;margin:-18px -16px 6px;padding:22px 16px 20px;border-radius:0 0 28px 28px;box-shadow:0 12px 28px rgba(74,63,176,.3);display:flex;flex-direction:column;gap:14px}
+.banner small{opacity:.8;font-size:.78rem;display:block}.banner h2{font-size:1.5rem;font-weight:700}
+.glass{background:rgba(255,255,255,.2);--edge:rgba(0,0,0,.28);color:#fff}
+.banner .stat{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25)}
+.stat i{font-style:normal;font-size:1.3rem;display:block}.stat span{font-size:.75rem;opacity:.9}.stat b{font-weight:700}
+.tile{display:flex;align-items:center;gap:14px;padding:16px;border-radius:20px;font-weight:600}
+.tile i{font-style:normal;font-size:1.6rem;width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.22);display:grid;place-items:center}
+.tile span{flex:1}.tile em{font-style:normal;font-size:1.8rem;opacity:.8}
+.t1{background:linear-gradient(135deg,#3a7bd5,#2b5fb8)}.t2{background:linear-gradient(135deg,#12a39b,#0b7371)}.t3{background:linear-gradient(135deg,#e0455d,#b92a42)}
+.bar{bottom:calc(10px + env(safe-area-inset-bottom,0px));width:calc(100% - 24px);max-width:456px;border:0;border-radius:26px;padding:10px;box-shadow:0 10px 30px rgba(27,31,59,.22)}
+.bar .pill{color:var(--ink)}.round{width:54px;padding:0;font-size:1.3rem;flex:none!important;text-align:center!important}
+.inrow{border-radius:22px 22px 0 0;box-shadow:0 -8px 24px rgba(27,31,59,.10)}
+.inrow button{background:var(--gold);color:#1b1f3b;--edge:#b57d00;font-weight:600}
+.me{background:linear-gradient(135deg,#f6b800,#f29000);color:#1b1f3b;border-bottom-right-radius:4px}
+.bot{border-bottom-left-radius:4px;box-shadow:var(--shadow)}.hint{opacity:.85;font-size:.88rem;border-style:dashed}
+.tabs{background:var(--line);padding:5px;border-radius:16px;gap:4px}
+.tabs button{background:transparent;color:var(--ink);box-shadow:none;border-radius:12px}.tabs button::after{display:none}.tabs button:active{transform:none}
+.tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 3px 10px rgba(0,0,0,.15);font-weight:600}
+.total{background:var(--grad);border-radius:20px;font-weight:600;box-shadow:0 10px 24px rgba(74,63,176,.3)}
+.card{border-radius:18px;box-shadow:var(--shadow)}.card b{font-size:1.05rem}
+.chip{padding:2px 10px;border-radius:20px;font-weight:600;font-size:.85rem;width:fit-content}
+.chip.up{background:rgba(20,160,140,.18);color:#0f9a86}.chip.down{background:rgba(209,52,75,.18);color:#e0455d}.chip.warn{background:rgba(242,169,0,.2);color:#c98a00}
+.tsell{font-weight:600}
+.empty{text-align:center;padding:40px 10px;opacity:.7}.empty i{display:block;font-style:normal;font-size:3rem}
+.kh{border-radius:16px;box-shadow:var(--shadow);align-items:center;gap:12px}
+.kh i{width:40px;height:40px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-style:normal;font-weight:700}
+.kh b{flex:1}.kh span{font-weight:700;color:var(--chili)}
+#langs li{border-radius:12px;background:var(--card);margin-bottom:8px;border:1px solid var(--line)}#langs li.cur::after{content:" ✓"}
+#blob{box-shadow:0 0 0 18px rgba(242,169,0,.12),0 0 0 40px rgba(209,52,75,.08),0 20px 60px rgba(58,123,213,.45)}
+#vtext{font-size:1.05rem;white-space:pre-line}
+
+.khc{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.khc .kh{border:0;box-shadow:none;border-radius:0;background:transparent}
+.khe{display:flex;justify-content:space-between;padding:8px 16px 8px 68px;font-size:.88rem;border-top:1px dashed var(--line)}.khe span:last-child{font-weight:600}
+
+.vtype{display:flex;gap:8px;width:100%;margin-top:14px}.vtype button{background:var(--gold);color:#1b1f3b;--edge:#b57d00;font-weight:600}
+#blob{cursor:pointer}
+.khe{align-items:center;gap:8px}.khe span:nth-child(2){font-weight:600;margin-left:auto}.khe span.acts{font-weight:400;display:flex;margin-left:0}
+button.mini{padding:4px 8px;font-size:.9rem;background:transparent;color:var(--ink);box-shadow:none;--d:0px}button.mini::after{display:none}button.mini:active{transform:none}
+.khe.ed{padding-left:16px}.khe.ed input{padding:6px 8px;border-radius:10px;font-size:.85rem}
+
+.msg{white-space:pre-line}
+
+/* ---------- 3D Pro v3 ---------- */
+:root{--hl:rgba(255,255,255,.65);--lift:0 1px 0 rgba(255,255,255,.7) inset,0 14px 22px -8px rgba(27,31,59,.22),0 3px 6px rgba(27,31,59,.08)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--hl:rgba(255,255,255,.07);--lift:0 1px 0 rgba(255,255,255,.08) inset,0 14px 22px -8px rgba(0,0,0,.6),0 3px 6px rgba(0,0,0,.35)}}
+:root[data-theme="dark"]{color-scheme:dark;--ink:#f3ecdc;--paper:#16162a;--card:#232342;--line:#3a3a5c;--btn:#3d4290;--hl:rgba(255,255,255,.07);--lift:0 1px 0 rgba(255,255,255,.08) inset,0 14px 22px -8px rgba(0,0,0,.6),0 3px 6px rgba(0,0,0,.35)}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(420px 320px at 92% 8%,rgba(123,82,214,.18),transparent 70%),radial-gradient(380px 300px at 4% 88%,rgba(18,163,155,.16),transparent 70%)}
+.card,.khc,.chips span,#langs li,.msg.bot{box-shadow:var(--lift);background-image:linear-gradient(180deg,var(--hl),transparent 45%)}
+.card:active,.khc:active{transform:translateY(1px)}
+button{border-radius:16px;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -3px 6px rgba(0,0,0,.18),0 var(--d) 0 var(--edge),0 calc(var(--d) + 6px) 14px rgba(0,0,0,.28)}
+.tile,.pill.big{--d:7px}.tile:active,.pill.big:active{transform:translateY(6px)}
+.tiles{gap:18px}
+.tile i{box-shadow:inset 0 2px 0 rgba(255,255,255,.45),0 4px 0 rgba(0,0,0,.2)}
+.chip{box-shadow:0 2px 0 rgba(0,0,0,.12)}
+.me{box-shadow:0 3px 0 #c97b00,0 9px 14px rgba(0,0,0,.16)}
+.logo{box-shadow:0 2px 0 #3a2f94,0 4px 0 #342a85,0 6px 0 #2d2476,0 8px 0 #261f68,0 24px 32px rgba(42,45,124,.45),inset 0 3px 0 rgba(255,255,255,.4),inset 0 -8px 14px rgba(0,0,0,.22);text-shadow:0 4px 6px rgba(0,0,0,.3);animation:float 3.2s ease-in-out infinite}
+.logo.mid{animation:none;box-shadow:0 2px 0 #3a2f94,0 4px 0 #342a85,0 6px 0 #2d2476,0 16px 22px rgba(42,45,124,.4),inset 0 3px 0 rgba(255,255,255,.4),inset 0 -6px 10px rgba(0,0,0,.2)}
+@keyframes float{50%{transform:translateY(-7px)}}
+@media(prefers-reduced-motion:reduce){.logo{animation:none}}
+.banner{position:relative;overflow:hidden;box-shadow:0 18px 34px rgba(74,63,176,.38),inset 0 -4px 0 rgba(0,0,0,.14)}
+.banner>*{position:relative;z-index:1}
+.banner::before,.banner::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.1);pointer-events:none}
+.banner::before{width:170px;height:170px;top:-60px;right:-40px}.banner::after{width:100px;height:100px;bottom:-40px;left:-20px}
+.banner .stat{box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 12px 20px rgba(0,0,0,.2);backdrop-filter:blur(8px)}
+.total{box-shadow:inset 0 2px 0 rgba(255,255,255,.3),inset 0 -4px 0 rgba(0,0,0,.15),0 14px 26px rgba(74,63,176,.35)}
+input,select{background-color:var(--card);box-shadow:inset 0 3px 6px rgba(27,31,59,.14),0 1px 0 rgba(255,255,255,.6)}
+input:focus,select:focus{box-shadow:inset 0 3px 6px rgba(27,31,59,.1),0 0 0 4px rgba(242,169,0,.35)}
+.bar{background:var(--card);backdrop-filter:blur(14px);box-shadow:0 18px 34px rgba(27,31,59,.28),inset 0 1px 0 var(--hl)}
+.tabs{box-shadow:inset 0 3px 7px rgba(0,0,0,.16)}
+.tabs button.on{box-shadow:0 4px 0 rgba(0,0,0,.14),0 8px 14px rgba(0,0,0,.14);transform:translateY(-1px)}
+.kh i{box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 3px 0 rgba(0,0,0,.25)}
+#blob{filter:none;background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.75) 0,rgba(255,255,255,0) 22%),radial-gradient(circle at 35% 30%,#ffd86b,var(--chili) 55%,var(--sky));box-shadow:inset -16px -20px 34px rgba(0,0,0,.3),inset 8px 10px 18px rgba(255,255,255,.3),0 0 0 18px rgba(242,169,0,.12),0 0 0 40px rgba(209,52,75,.08),0 34px 50px rgba(58,123,213,.45)}
+
+.ic{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.22em;flex:none}
+.ic.xl{width:1em;height:1em}
+.logo .ic{stroke-width:1.5;color:#fff;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
+.chips span .ic{color:var(--teal)}
+.glass .ic{width:1.35em;height:1.35em}.back .ic{width:1.2em;height:1.2em;vertical-align:middle}
+.stat i .ic{width:1.3em;height:1.3em;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.tile i .ic{width:1em;height:1em;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}.tile em .ic{width:.7em;height:.7em}
+.dock .ic{color:var(--teal)}.round .ic{width:1.4em;height:1.4em;color:var(--teal)}
+.empty .ic{width:1em;height:1em;opacity:.5;stroke-width:1.5}
+.khe .ic{width:1em;height:1em;opacity:.6}button.mini .ic{width:1.15em;height:1.15em}
+.banner small .ic{width:1em;height:1em}
+.screen>.top{position:sticky;top:0;z-index:5;margin:-18px -16px 0;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 12px;background:var(--paper);background:color-mix(in srgb,var(--paper) 80%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.stat b,.total,.khe,.kh span,.card,.chip,.tsell{font-variant-numeric:tabular-nums}
+h2{letter-spacing:-.2px}.banner h2{font-size:1.6rem}
+.stat b{font-size:1.7rem;letter-spacing:-.5px;text-shadow:0 2px 0 rgba(0,0,0,.18)}
+.total{font-size:1.25rem;letter-spacing:-.2px}
+
+.remind{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:rgba(242,169,0,.16);border:1px solid rgba(242,169,0,.5);font-size:.9rem;box-shadow:var(--lift)}
+.remind[hidden]{display:none}
+.rdot{width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(242,169,0,.3);flex:none}
+#remindtxt{flex:1;font-weight:500}
+.vtip{font-size:.82rem;opacity:.75;text-align:center;padding:0 12px}
+.vtype input{font-size:1rem;padding:16px}
+
+[hidden]{display:none!important}
+button{overflow:hidden}
+button::before{content:"Dukaan Manager AI";position:absolute;right:10px;bottom:3px;font-size:.5rem;font-weight:600;letter-spacing:.4px;opacity:.3;white-space:nowrap;pointer-events:none}
+.sm::before,.round::before,.back::before,.glass::before,.mini::before,.tabs button::before{display:none}
+.glass.big{width:54px;height:54px;padding:0;border-radius:18px;display:grid;place-items:center}.glass.big .ic{width:1.7em;height:1.7em}
+.regextra{display:flex;flex-direction:column;gap:12px}
+.khm{display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:.85rem;border-top:1px dashed var(--line);flex-wrap:wrap}
+.khm.due{background:rgba(242,169,0,.14)}.khm .acts{margin-left:auto;display:flex}.khm .ic{width:1em;height:1em;opacity:.7}
+.khm.ed input{padding:6px 8px;border-radius:10px;font-size:.85rem;flex:1;min-width:0}.khm.ed input[data-km=every]{flex:0 0 70px}
+.kmsg{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--lift)}
+.kmsg textarea{font:inherit;padding:12px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);resize:vertical}
+.kmsg .row{flex-wrap:wrap}.kmsg a.pill{flex:1;text-align:center;text-decoration:none;font-size:.95rem;padding:10px}
+
+.netrow{display:flex;gap:10px}
+.netrow span{flex:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.netrow small{font-size:.72rem;opacity:.9}.netrow b{font-size:1rem;font-variant-numeric:tabular-nums}
+.t4{background:linear-gradient(135deg,#f29000,#d97300);--edge:#9a5200}
+.total{white-space:pre-line}
+.khe .pay{color:#0f9a86}
+.khm.ed input[type=time]{flex:0 0 108px}
+.tour{position:fixed;inset:0;z-index:50;background:rgba(10,10,30,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:grid;place-items:center;padding:20px}
+.tourcard{width:100%;max-width:380px;background:var(--card);border-radius:28px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 30px 60px rgba(0,0,0,.4)}
+.tourico{width:84px;height:84px;border-radius:26px;background:var(--grad);color:#fff;display:grid;place-items:center;box-shadow:0 6px 0 #2d2476,0 16px 26px rgba(42,45,124,.4)}
+.tourico .ic{width:42px;height:42px}
+.tourcard p{opacity:.85;line-height:1.5}
+.dots{display:flex;gap:6px}.dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--gold);width:22px;border-radius:6px}
+.tourcard .row{width:100%;justify-content:space-between;margin-top:6px}.tourcard .row .pill{flex:1}
+
+.toprow{display:flex;gap:12px;align-items:center}.toprow .tile{flex:1;min-width:0}
+.vwrap{display:flex;flex-direction:column;align-items:center;gap:7px;background:none;box-shadow:none;padding:0 0 4px;border-radius:12px;width:76px;flex:none;color:inherit;--d:0px;overflow:visible}
+.vwrap::before,.vwrap::after{display:none}.vwrap:active{transform:none}
+.vcirc{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;color:#1b1f3b;background:radial-gradient(circle at 32% 28%,#ffe08a,#f2a900 55%,#d98200);box-shadow:inset 0 2px 0 rgba(255,255,255,.5),inset 0 -4px 8px rgba(0,0,0,.18),0 6px 0 #9a5d00,0 12px 18px rgba(0,0,0,.25);transition:transform .08s,box-shadow .08s}
+.vcirc .ic{width:30px;height:30px}
+.vwrap:active .vcirc{transform:translateY(5px);box-shadow:inset 0 2px 0 rgba(255,255,255,.5),0 1px 0 #9a5d00,0 3px 6px rgba(0,0,0,.25)}
+.vlabel{font-size:.62rem;font-weight:700;line-height:1.15;text-align:center}
+#remtoggle.off{background:var(--line);color:var(--ink);--edge:var(--edge-soft)}
+</style>
+</head>
+<body>
+<div id="app">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-shop" viewBox="0 0 24 24"><path d="M4 10v10h16V10"/><path d="M2 10l2-6h16l2 6a3 3 0 0 1-5 2 3 3 0 0 1-4 0 3 3 0 0 1-4 0 3 3 0 0 1-5-2z"/><path d="M10 20v-5h4v5"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></symbol><symbol id="i-rupee" viewBox="0 0 24 24"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3"/><path d="M9 13c6.667 0 6.667-10 0-10"/></symbol><symbol id="i-trend" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol><symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol><symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol><symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol><symbol id="i-chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol><symbol id="i-back" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-pen" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></symbol><symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol><symbol id="i-send" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol><symbol id="i-wallet" viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></symbol></defs></svg>
+
+<section class="screen on" id="home">
+  <div class="top end"><button class="pill sm" data-go="lang"><span data-t="lang"></span></button></div>
+  <div class="hero"><div class="logo"><svg class="ic xl"><use href="#i-shop"/></svg></div><h1 data-t="hello"></h1><h2 data-t="mgr"></h2></div>
+  <div class="chips"><span><svg class="ic"><use href="#i-mic"/></svg> <b data-t="voice"></b></span><span><svg class="ic"><use href="#i-book"/></svg> <b data-t="khata"></b></span><span><svg class="ic"><use href="#i-trend"/></svg> <b data-t="profit"></b></span></div>
+  <button class="pill gold big" data-auth="reg"><span data-t="reg"></span></button>
+  <button class="pill big" data-auth="login"><span data-t="login"></span></button>
+  <p class="safe"><svg class="ic"><use href="#i-lock"/></svg> <span data-t="safe"></span> 🇮🇳</p>
+</section>
+
+<section class="screen" id="lang">
+  <div class="top"><button class="back" data-back aria-label="Back"><svg class="ic"><use href="#i-back"/></svg></button><h2 data-t="lang"></h2></div>
+  <input id="lsearch" data-tp="search" type="search">
+  <ul id="langs"></ul>
+</section>
+
+<section class="screen" id="auth">
+  <div class="top"><button class="back" data-back aria-label="Back"><svg class="ic"><use href="#i-back"/></svg></button><h2 id="authTitle"></h2></div>
+  <div class="logo mid"><svg class="ic xl"><use href="#i-shop"/></svg></div>
+  <input id="email" type="email" data-tp="email" autocomplete="email">
+  <div class="row"><input id="pass" type="password" data-tp="pass" autocomplete="current-password"><button class="back" id="eye" type="button" aria-label="Show password"><svg class="ic"><use href="#i-eye"/></svg></button></div>
+  <div class="regextra" id="regextra"><input id="shop" data-tp="shopph" autocomplete="organization"><input id="phone" type="tel" inputmode="tel" data-tp="phoneph" autocomplete="tel"></div>
+  <p class="err" id="autherr"></p>
+  <button class="pill gold" id="authgo" data-t="cont"></button>
+</section>
+
+<section class="screen" id="dash">
+  <div class="banner">
+    <div class="top"><div><small id="ddate"></small><h2 id="dgreet"></h2></div><span class="spacer"></span><button class="glass big" data-go="settings" aria-label="Settings"><svg class="ic"><use href="#i-sliders"/></svg></button></div>
+    <div class="stats"><div class="stat s1"><i><svg class="ic"><use href="#i-rupee"/></svg></i><span data-t="tsell"></span><b id="dsell">0</b></div><div class="stat s2"><i><svg class="ic"><use href="#i-trend"/></svg></i><span data-t="tprofit"></span><b id="dprofit">0</b></div></div>
+    <div class="netrow"><span><small data-t="lbl_exp"></small><b id="dexp">0</b></span><span><small data-t="lbl_net"></small><b id="dnet">0</b></span></div>
+  </div>
+  <div class="remind" id="remind" hidden><span class="rdot"></span><span id="remindtxt"></span><button class="sm" data-remind><span data-t="remindgo"></span></button></div>
+  <div class="remind" id="due" hidden><span class="rdot"></span><span id="duetxt"></span><button class="sm" data-due><span data-t="duego"></span></button></div>
+  <div class="tiles">
+    <div class="toprow">
+      <button class="vwrap" data-go="vscreen" aria-label="Voice assistant"><span class="vcirc"><svg class="ic"><use href="#i-mic"/></svg></span><span class="vlabel" data-t="voice"></span></button>
+      <button class="tile t1" data-report="sell"><i><svg class="ic"><use href="#i-rupee"/></svg></i><span data-t="sell"></span><em><svg class="ic"><use href="#i-chev"/></svg></em></button>
+    </div>
+    <button class="tile t2" data-report="profit"><i><svg class="ic"><use href="#i-trend"/></svg></i><span data-t="profit"></span><em><svg class="ic"><use href="#i-chev"/></svg></em></button>
+    <button class="tile t4" data-report="expense"><i><svg class="ic"><use href="#i-wallet"/></svg></i><span data-t="expense"></span><em><svg class="ic"><use href="#i-chev"/></svg></em></button>
+    <button class="tile t3" data-go="khata"><i><svg class="ic"><use href="#i-book"/></svg></i><span data-t="khata"></span><em><svg class="ic"><use href="#i-chev"/></svg></em></button>
+  </div>
+  <div class="bar"><button class="pill dock" data-go="typemsg"><svg class="ic"><use href="#i-msg"/></svg> <span data-t="type"></span></button><button class="pill round" data-go="qbox" aria-label="Question box"><svg class="ic"><use href="#i-help"/></svg></button></div>
+</section>
+
+<section class="screen" id="typemsg">
+  <div class="top"><button class="back" data-back aria-label="Back"><svg class="ic"><use href="#i-back"/></svg></button><h2 data-t="type"></h2><button class="pill sm" data-go="settings" aria-label="Settings"><svg class="ic"><use href="#i-sliders"/></svg></button></div>
+  <div class="chat" id="log-type"><div class="msg bot hint" data-t="hint_type"></div></div>
+  <div class="inrow"><input id="in-type" data-tp="type"><button data-send="type" data-t="send"></button></div>
+</section>
+
+<section class="screen" id="qbox">
+  <div class="top"><button class="back" data-back aria-label="Back"><svg class="ic"><use href="#i-back"/></svg></button><h2 data-t="ask"></h2></div>
+  <div class="chat" id="log-ask"><div class="msg bot hint" data-t="hint_ask"></div></div>
+  <div class="inrow"><input id="in-ask" data-tp="ask"><button data-send="ask" data-t="send"></button></div>
+</section>
+
+<section class="screen" id="vscreen">
+  <div class="top" style="width:100%"><button class="back" data-back aria-label="Back"><svg class="ic"><use href="#i-back"/></svg></button><h2 data-t="voice"></h2></div>
+  <div id="blob"></div>
+  <p id="vtext"></p>
+  <button class="pill gold" id="mic"><span data-t="speak"></span></button>
+  <p class="vtip" data-t="vtip"></p>
+  <div class="vtype"><input id="in-voice" data-tp="vtype" enterkeyhint="send" autocomplete="off"><button id="vsend" data-t="send"></button></div>
+</section>
+
+<section class="screen" id="report">
+  <div class="top"><button class="back" data-back aria-label="Back"><svg class="ic"><use href="#i-back"/></svg></button><h2 id="rtitle"></h2></div>
+  <div class="tabs"><button data-per="daily" data-t="daily"></button><button data-per="weekly" data-t="weekly"></button><button data-per="monthly" data-t="monthly"></button></div>
+  <input type="date" id="rdate">
+  <div class="total" id="rtotal"></div>
+  <div class="chat" id="rlist"></div>
+</section>
+
+<section class="screen" id="khata">
+  <div class="top"><button class="back" data-back aria-label="Back"><svg class="ic"><use href="#i-back"/></svg></button><h2 data-t="khata"></h2><button class="pill sm" id="remtoggle"></button></div>
+  <div class="kmsg" id="kmsgbox" hidden>
+    <b id="kmsgto"></b><small data-t="msgprev"></small>
+    <textarea id="kmsgtxt" rows="5"></textarea>
+    <div class="row"><a class="pill sm" id="kmsgsms" target="_blank" rel="noopener">SMS</a><a class="pill sm" id="kmsgwa" target="_blank" rel="noopener">WhatsApp</a><a class="pill sm" id="kmsgcal" target="_blank" rel="noopener">Calendar</a><button class="sm" id="kmsgcopy" data-t="kcopy"></button><button class="back" id="kmsgx" aria-label="Close">✕</button></div>
+  </div>
+  <div id="klist" class="chat"></div>
+</section>
+
+<section class="screen" id="settings">
+  <div class="top"><button class="back" data-back aria-label="Back"><svg class="ic"><use href="#i-back"/></svg></button><h2 data-t="settings"></h2></div>
+  <button class="pill" data-go="lang" data-t="lang"></button>
+  <label data-t="shoplbl"></label><input id="set-shop" autocomplete="organization">
+  <label data-t="phonelbl"></label><input id="set-phone" type="tel" inputmode="tel">
+  <label data-t="curlbl">Currency Symbol</label>
+  <select id="set-currency">
+    <option value="₹">₹ (INR - Rupee)</option>
+    <option value="$">$ (USD - Dollar)</option>
+    <option value="€">€ (EUR - Euro)</option>
+    <option value="£">£ (GBP - Pound)</option>
+    <option value="د.إ">د.إ (AED - Dirham)</option>
+    <option value="৳">৳ (BDT - Taka)</option>
+  </select>
+  <p class="err" id="profmsg"></p>
+  <button id="saveprof" data-t="save"></button>
+  <button class="pill" id="tourbtn"><span data-t="tourbtn"></span></button>
+  <button class="pill" id="logout" data-t="logout"></button>
+</section>
+
+<div class="tour" id="tour" hidden role="dialog" aria-modal="true">
+  <div class="tourcard"><div class="tourico" id="tourico"></div><h2 id="tourt"></h2><p id="tourb"></p><div class="dots" id="tourdots"></div>
+  <div class="row"><button class="back" id="tourskip" data-t="tskip"></button><button class="pill gold" id="tournext"><span data-t="tnext"></span></button></div></div>
+</div>
+<div class="tour" id="perm" hidden role="dialog" aria-modal="true">
+  <div class="tourcard"><div class="tourico"><svg class="ic"><use href="#i-bell"/></svg></div><h2 data-t="permt"></h2><p data-t="permb"></p>
+  <div class="row"><button class="back" id="permno" data-t="permno"></button><button class="pill gold" id="permyes"><span data-t="permyes"></span></button></div></div>
+</div>
+</div>
+<script>
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const r2 = x => Math.round(x * 100) / 100;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ic = n => `<svg class="ic"><use href="#i-${n}"/></svg>`;
+const cur = () => (S.currency || '₹');
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') };
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch { } };
+
+const LANGS = [['en', 'English', 'en-IN'], ['hi', 'हिन्दी Hindi', 'hi-IN'], ['hinglish', 'Hinglish', 'hi-IN'], ['mr', 'मराठी Marathi', 'mr-IN'], ['pa', 'ਪੰਜਾਬੀ Punjabi', 'pa-IN'], ['gu', 'ગુજરાતી Gujarati', 'gu-IN'], ['bn', 'বাংলা Bengali', 'bn-IN'], ['ta', 'தமிழ் Tamil', 'ta-IN'], ['te', 'తెలుగు Telugu', 'te-IN'], ['kn', 'ಕನ್ನಡ Kannada', 'kn-IN'], ['ml', 'മലയാളം Malayalam', 'ml-IN'], ['or', 'ଓଡ଼ିଆ Odia', 'or-IN'], ['ur', 'اردو Urdu', 'ur-IN'], ['as', 'অসমীয়া Assamese', 'as-IN'], ['fr', 'Français French', 'fr-FR'], ['es', 'Español Spanish', 'es-ES'], ['ar', 'العربية Arabic', 'ar-SA'], ['zh', '中文 Chinese', 'zh-CN'], ['ja', '日本語 Japanese', 'ja-JP']];
+const T = {
+  en: { remon: 'Reminders: ON', remoff: 'Reminders: OFF', remcoff: '{name}: reminders stopped.', remcon: '{name}: reminders started.', remalloff: 'All khata reminders are OFF.', remallon: 'Khata reminders are ON.', permt: 'Khata reminders', permb: 'Dukaan Manager will write a polite message for every customer who owes you money and remind you when it is due. You send it with one tap on SMS or WhatsApp. A web app cannot send messages silently in the background. You can switch this off anytime.', permyes: 'Allow reminders', permno: 'Not now', noname: 'No such customer in Khata Book.', khapaid: '{name} paid {cur}{amt}.', khaleft: 'Balance left: {cur}{amt}. Reminders will use this amount.', khaclear: 'Khata cleared. Reminders stopped.', khrcv: 'received', remtime: '{name}: reminder time set to {t}.', expsaved: 'Expense saved: {title} {cur}{amt}.', exptoday: 'Total expense today: {cur}{amt}', lbl_exp: 'Expense today', lbl_net: 'Net profit', texp_x: 'Total expense', tnet_x: 'Net profit', expense: 'Daily/Monthly Expense', texp_d: 'Total expense today', texp_w: 'Total expense this week', texp_m: 'Total expense this month', tskip: 'Skip', tnext: 'Next', tdone: 'Start', tourbtn: 'How to use (guide)', tour1t: 'Talk to your shop manager', tour1b: 'Tap the round mic at the top and say: "5 chips 5 rs per item sell hua, buy price 4.12". It is saved with date and time.', tour2t: 'Or just type', tour2b: 'Use Type message for sales, khata and expenses. Use the Question box (?) to ask questions.', tour3t: 'Khata Book', tour3b: 'Say: "Aman ke naam 500 khata karo, phone 8412345678, har 3 din". When he pays: "Aman ke khata ke 300 rs de diya".', tour4t: 'Sell, Profit and Expense', tour4b: 'See daily, weekly and monthly totals. Expenses are cut from profit to show your net profit.', tour5t: 'Ask anything', tour5b: 'Try: "2025 ka total sell kitna hai?", "is mahine ka kharcha", "Aman ka khata kitna hai?"', tour6t: 'Settings', tour6b: 'Change language, shop name and phone here. Reminder days and time can be changed in Khata Book or by voice.', shopph: 'Shop name', phoneph: 'Mobile number (10 digits)', needshop: 'Please enter your shop name.', needphone: 'Please enter a valid 10-digit mobile number.', shoplbl: 'Shop name', phonelbl: 'Mobile number', nophone: 'Add phone', every: 'Every {n} days', msgprev: 'Message preview (you can edit it)', kcopy: 'Copy', kcopied: 'Copied', dueTxt: '{n} customers are due for a khata reminder.', duego: 'Open', welcome: 'Welcome {shop}! I am your Dukaan Manager AI. Tell me your sales and khata by voice or typing, and I will keep the accounts.', remset: '{name}: reminder is now every {n} days.', phoneset: '{name}: phone number saved.', needprof: 'Please add your shop name and mobile number.', writing: 'Writing the message…', hello: 'Hello, User', mgr: 'I am your dukan manager', reg: 'Register', login: 'Login', lang: 'Language', safe: '100% safe and secure · Made in India', search: 'Search language', email: 'Enter your Gmail', pass: 'Password', cont: 'Continue', needacc: 'Open your account first: enter Gmail and password.', exists: 'This Gmail already has an account. Use Login.', wrong: 'Wrong Gmail or password.', noacc: 'No account found. Register first.', hint_type: 'Type a sale or khata, e.g. "5 chips 5 rupees per item sell, buy price 4.12" or "Aman ke naam pe 500 khata add karo".', hint_ask: 'Ask anything, e.g. "Aaj kitna profit hua?" or "Kis kis ka khata hai?"', tsell_d: 'Total sell today', tsell_w: 'Total sell this week', tsell_m: 'Total sell this month', tprofit_d: 'Total profit today', tprofit_w: 'Total profit this week', tprofit_m: 'Total profit this month', tsellrow: 'T-sell', upd: 'Update', prod: 'Product', sp: 'Sell', dash: 'Dashboard', tsell: 'Today total sell', tprofit: 'Today total profit', sell: 'Daily/Monthly Sell', profit: 'Daily/Monthly Profit', khata: 'Khata Book', type: 'Type message', ask: 'Question box', send: 'Send', voice: 'Voice assistant', speak: 'Tap to speak', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', edit: 'Edit', del: 'Delete', save: 'Save', buy: 'Buy', pro: 'Profit', qty: 'Qty', settings: 'Settings', logout: 'Logout', nodata: 'No data for this date.', saved: 'Saved', askbuy: 'What is the buy price (per item)? Tell the buy price.', askunit: 'Is the buy price per item or total? Reply with the number, add "total" if it is total.', useask: 'Questions go in the Question box. Here you can only save entries.', usesave: 'Save entries from Type message or the voice assistant.', dunno: 'I did not understand. Try: "5 chips 5 rupees per item sell, buy price 4.12".', nosell: 'No sale today.', khadone: 'Khata updated', nokhata: 'No khata yet.', delq: 'Delete this entry?', unsup: 'Voice is not supported in this browser. Use Chrome, or type below.', listening: 'Listening… tap to stop', micblock: 'Microphone is blocked. Allow mic permission, open the app in a new tab, or type below.', nospeech: 'I heard nothing. Tap and try again.', micerr: 'Voice failed. Check internet, or type below.', vtype: 'Or type here', curlbl: 'Currency Symbol', greet_m: 'Good morning', greet_a: 'Good afternoon', greet_e: 'Good evening', q_item: 'Which product is it? Tell the product name.', q_qty: 'How many units? Tell the quantity.', q_sell: 'What is the sell price? Tell the sell price.', cancelled: 'Okay, cancelled.', buylater: 'Okay. You can add the buy price later from the Sell page (Edit).', missHead: 'Buy price is missing, otherwise I cannot work out the profit:', missQ: 'What is the buy price?', missHow: 'Reply with the number and price, e.g. "1 4.12".', missDone: 'All entries now have a buy price.', remind: '{n} entries have no buy price', remindgo: 'Add now', alltime: 'Till now', tsell_x: 'Total sell', tprofit_x: 'Total profit', pmiss: '{n} entries without buy price are not counted in profit', vtip: 'Tip: tap your keyboard mic key and speak into the box below. This works on every phone.', vready: 'Tap the mic and speak, or use your keyboard mic below.' },
+  hi: { remon: 'रिमाइंडर: चालू', remoff: 'रिमाइंडर: बंद', remcoff: '{name}: रिमाइंडर बंद कर दिए।', remcon: '{name}: रिमाइंडर चालू कर दिए।', remalloff: 'सभी खाता रिमाइंडर बंद हैं।', remallon: 'खाता रिमाइंडर चालू हैं।', permt: 'खाता रिमाइंडर', permb: 'दुकान मैनेजर हर उधार वाले ग्राहक के लिए अच्छा मैसेज लिखेगा और समय आने पर आपको याद दिलाएगा। आप एक टैप में SMS या WhatsApp से भेज दें। वेब ऐप अपने आप चुपचाप बैकग्राउंड में मैसेज नहीं भेज सकता। इसे कभी भी बंद कर सकते हैं।', permyes: 'रिमाइंडर चालू करें', permno: 'अभी नहीं', noname: 'खाता बुक में ऐसा कोई ग्राहक नहीं है।', khapaid: '{name} ने {cur}{amt} दिए।', khaleft: 'बाकी: {cur}{amt}। रिमाइंडर अब इसी रकम का जाएगा।', khaclear: 'खाता साफ़ हो गया। रिमाइंडर बंद।', khrcv: 'मिले', remtime: '{name}: रिमाइंडर का समय {t} कर दिया।', expsaved: 'खर्चा सेव हुआ: {title} {cur}{amt}।', exptoday: 'आज का कुल खर्चा: {cur}{amt}', lbl_exp: 'आज का खर्चा', lbl_net: 'नेट मुनाफ़ा', texp_x: 'कुल खर्चा', tnet_x: 'नेट मुनाफ़ा', expense: 'दैनिक/मासिक खर्चा', texp_d: 'आज का कुल खर्चा', texp_w: 'इस हफ़्ते का कुल खर्चा', texp_m: 'इस महीने का कुल खर्चा', tskip: 'छोड़ें', tnext: 'आगे', tdone: 'शुरू करें', tourbtn: 'कैसे इस्तेमाल करें (गाइड)', tour1t: 'अपने दुकान मैनेजर से बात करें', tour1b: 'ऊपर के गोल माइक को दबाकर बोलें: "5 चिप्स 5 रुपये प्रति पीस बिके, खरीद 4.12"। तारीख और समय के साथ सेव हो जाएगा।', tour2t: 'या सीधे लिखें', tour2b: 'बिक्री, खाता और खर्चे के लिए मैसेज लिखें में लिखें। सवाल पूछने के लिए सवाल बॉक्स (?) इस्तेमाल करें।', tour3t: 'खाता बुक', tour3b: 'बोलें: "Aman के नाम 500 खाता करो, फोन 8412345678, हर 3 दिन"। जब वह पैसे दे: "Aman के खाते के 300 रुपये दे दिया"।', tour4t: 'बिक्री, मुनाफ़ा और खर्चा', tour4b: 'रोज़, हफ़्ते और महीने का कुल देखें। खर्चा मुनाफ़े में से घटकर नेट मुनाफ़ा दिखता है।', tour5t: 'कुछ भी पूछें', tour5b: 'पूछें: "2025 का कुल सेल कितना है?", "इस महीने का खर्चा", "Aman का खाता कितना है?"', tour6t: 'सेटिंग', tour6b: 'यहाँ भाषा, दुकान का नाम और फोन बदलें। रिमाइंडर के दिन और समय खाता बुक में या बोलकर बदल सकते हैं।', shopph: 'दुकान का नाम', phoneph: 'मोबाइल नंबर (10 अंक)', needshop: 'कृपया दुकान का नाम डालें।', needphone: 'कृपया सही 10 अंकों का मोबाइल नंबर डालें।', shoplbl: 'दुकान का नाम', phonelbl: 'मोबाइल नंबर', nophone: 'फोन जोड़ें', every: 'हर {n} दिन', msgprev: 'मैसेज देखें (बदल भी सकते हैं)', kcopy: 'कॉपी', kcopied: 'कॉपी हो गया', dueTxt: '{n} ग्राहकों को खाता रिमाइंडर भेजना है।', duego: 'खोलें', welcome: 'नमस्ते {shop}! मैं आपका दुकान मैनेजर AI हूँ। बोलकर या लिखकर अपनी बिक्री और खाता बताइए, हिसाब मैं रखूँगा।', remset: '{name}: रिमाइंडर अब हर {n} दिन में जाएगा।', phoneset: '{name}: फोन नंबर सेव हो गया।', needprof: 'कृपया दुकान का नाम और मोबाइल नंबर डालें।', writing: 'मैसेज लिख रहा हूँ…', hello: 'नमस्ते, यूज़र', mgr: 'मैं आपका दुकान मैनेजर हूँ', reg: 'रजिस्टर', login: 'लॉगिन', lang: 'भाषा', safe: '100% सुरक्षित · मेड इन इंडिया', search: 'भाषा खोजें', email: 'अपना जीमेल डालें', pass: 'पासवर्ड', cont: 'आगे बढ़ें', needacc: 'पहले अकाउंट खोलें: जीमेल और पासवर्ड डालें।', exists: 'इस जीमेल का अकाउंट है। लॉगिन करें।', wrong: 'जीमेल या पासवर्ड गलत है।', noacc: 'अकाउंट नहीं मिला। पहले रजिस्टर करें।', hint_type: 'बिक्री या खाता लिखें, जैसे "5 चिप्स 5 रुपये प्रति पीस बिके, खरीद 4.12" या "Aman के नाम पर 500 खाता जोड़ो"।', hint_ask: 'कुछ भी पूछें, जैसे "आज कितना मुनाफ़ा हुआ?" या "किस किस का खाता है?"', tsell_d: 'आज की कुल बिक्री', tsell_w: 'इस हफ़्ते की कुल बिक्री', tsell_m: 'इस महीने की कुल बिक्री', tprofit_d: 'आज का कुल मुनाफ़ा', tprofit_w: 'इस हफ़्ते का कुल मुनाफ़ा', tprofit_m: 'इस महीने का कुल मुनाफ़ा', tsellrow: 'कुल बिक्री', upd: 'अपडेट', prod: 'प्रोडक्ट', sp: 'बिक्री', dash: 'डैशबोर्ड', tsell: 'आज की कुल बिक्री', tprofit: 'आज का कुल मुनाफ़ा', sell: 'दैनिक/मासिक बिक्री', profit: 'दैनिक/मासिक मुनाफ़ा', khata: 'खाता बुक', type: 'मैसेज लिखें', ask: 'सवाल बॉक्स', send: 'भेजें', voice: 'वॉइस असिस्टेंट', speak: 'बोलने के लिए दबाएँ', daily: 'दैनिक', weekly: 'साप्ताहिक', monthly: 'मासिक', edit: 'बदलें', del: 'हटाएँ', save: 'सेव', buy: 'खरीद', pro: 'मुनाफ़ा', qty: 'मात्रा', settings: 'सेटिंग', logout: 'लॉगआउट', nodata: 'इस तारीख का डेटा नहीं है।', saved: 'सेव हो गया', askbuy: 'खरीद कीमत (प्रति आइटम) क्या है? खरीद कीमत बोलिए।', askunit: 'खरीद कीमत प्रति आइटम है या कुल? नंबर बताएँ, कुल हो तो "total" लिखें।', useask: 'सवाल सवाल बॉक्स में पूछें। यहाँ सिर्फ एंट्री सेव होती है।', usesave: 'एंट्री मैसेज लिखें या वॉइस असिस्टेंट से सेव करें।', dunno: 'समझ नहीं आया। जैसे: "5 चिप्स 5 रुपये प्रति पीस बिके, खरीद 4.12"।', nosell: 'आज कोई बिक्री नहीं हुई।', khadone: 'खाता अपडेट हुआ', nokhata: 'अभी कोई खाता नहीं है।', delq: 'यह एंट्री हटाएँ?', unsup: 'इस ब्राउज़र में वॉइस नहीं चलता। Chrome इस्तेमाल करें या नीचे लिखें।', listening: 'सुन रहा हूँ… रोकने के लिए दबाएँ', micblock: 'माइक बंद है। माइक की अनुमति दें, ऐप को नए टैब में खोलें, या नीचे लिखें।', nospeech: 'कुछ सुनाई नहीं दिया। फिर से दबाकर बोलें।', micerr: 'वॉइस नहीं चली। इंटरनेट देखें या नीचे लिखें।', vtype: 'या यहाँ लिखें', curlbl: 'मुद्रा (Currency)', greet_m: 'सुप्रभात', greet_a: 'नमस्कार', greet_e: 'शुभ संध्या', q_item: 'कौन सा प्रोडक्ट है? प्रोडक्ट का नाम बताइए।', q_qty: 'कितने यूनिट हैं? यूनिट कितने हैं बताइए।', q_sell: 'सेल प्राइस क्या है? सेल प्राइस बोलिए।', cancelled: 'ठीक है, रद्द किया।', buylater: 'ठीक है। खरीद कीमत बाद में बिक्री पेज में बदलकर डाल सकते हैं।', missHead: 'खरीद कीमत नहीं है, वरना मुनाफ़ा कैसे निकालेंगे:', missQ: 'खरीद कीमत क्या है?', missHow: 'नंबर और कीमत बताइए, जैसे "1 4.12".', missDone: 'अब सभी एंट्री में खरीद कीमत है।', remind: '{n} एंट्री में खरीद कीमत नहीं है', remindgo: 'अभी डालें', alltime: 'आज तक', tsell_x: 'कुल बिक्री', tprofit_x: 'कुल मुनाफ़ा', pmiss: '{n} एंट्री में खरीद कीमत नहीं, इसलिए मुनाफ़े में नहीं गिनी', vtip: 'सुझाव: कीबोर्ड का माइक दबाकर नीचे के बॉक्स में बोलें। यह हर फ़ोन पर चलता है।', vready: 'माइक दबाकर बोलें, या नीचे कीबोर्ड के माइक से बोलें.' },
+  hinglish: { remon: 'Reminder: ON', remoff: 'Reminder: OFF', remcoff: '{name}: reminder band kar diye.', remcon: '{name}: reminder chalu kar diye.', remalloff: 'Saare khata reminder band hain.', remallon: 'Khata reminder chalu hain.', permt: 'Khata reminder', permb: 'Dukaan Manager har udhar wale customer ke liye achha message likhega aur time aane par aapko yaad dilayega. Aap ek tap mein SMS ya WhatsApp se bhej do. Web app apne aap chupchaap background mein message nahi bhej sakta. Isse kabhi bhi band kar sakte ho.', permyes: 'Reminder chalu karo', permno: 'Abhi nahi', noname: 'Khata Book mein aisa koi customer nahi hai.', khapaid: '{name} ne {cur}{amt} diye.', khaleft: 'Baki: {cur}{amt}. Reminder ab isi amount ka jaiga.', khaclear: 'Khata saaf ho gaya. Reminder band.', khrcv: 'mile', remtime: '{name}: reminder ka time {t} kar diya.', expsaved: 'Kharcha save hua: {title} {cur}{amt}.', exptoday: 'Aaj ka total kharcha: {cur}{amt}', lbl_exp: 'Aaj ka kharcha', lbl_net: 'Net profit', texp_x: 'Total kharcha', tnet_x: 'Net profit', expense: 'Daily/Monthly Kharcha', texp_d: 'Aaj ka total kharcha', texp_w: 'Is hafte ka total kharcha', texp_m: 'Is mahine ka total kharcha', tskip: 'Skip', tnext: 'Aage', tdone: 'Shuru karo', tourbtn: 'Kaise use karein (guide)', tour1t: 'Apne dukaan manager se baat karo', tour1b: 'Upar ke gol mic ko dabao aur bolo: "5 chips 5 rs per item sell hua, buy price 4.12". Date aur time ke saath save ho jayega.', tour2t: 'Ya seedha likho', tour2b: 'Sale, khata aur kharche ke liye Type message use karo. Sawal poochne ke liye Question box (?) use karo.', tour3t: 'Khata Book', tour3b: 'Bolo: "Aman ke naam 500 khata karo, phone 8412345678, har 3 din". Jab wo paise de: "Aman ke khata ke 300 rs de diya".', tour4t: 'Sell, Profit aur Kharcha', tour4b: 'Roz, hafte aur mahine ka total dekho. Kharcha profit mein se ghatkar net profit dikhta hai.', tour5t: 'Kuch bhi pucho', tour5b: 'Pucho: "2025 ka total sell kitna hai?", "is mahine ka kharcha", "Aman ka khata kitna hai?"', tour6t: 'Setting', tour6b: 'Yahan language, dukaan ka naam aur phone badlo. Reminder ke din aur time Khata Book mein ya bolkar badal sakte ho.', shopph: 'Dukaan ka naam', phoneph: 'Mobile number (10 digit)', needshop: 'Dukaan ka naam daalo.', needphone: 'Sahi 10 digit ka mobile number daalo.', shoplbl: 'Dukaan ka naam', phonelbl: 'Mobile number', nophone: 'Phone jodo', every: 'Har {n} din', msgprev: 'Message dekho (badal bhi sakte ho)', kcopy: 'Copy', kcopied: 'Copy ho gaya', dueTxt: '{n} customers ko khata reminder bhejna hai.', duego: 'Kholo', welcome: 'नमस्ते {shop}! मैं आपका दुकान मैनेजर AI हूँ। बोलकर या लिखकर अपनी बिक्री और खाता बताइए, हिसाब मैं रखूँगा।', remset: '{name}: reminder ab har {n} din mein jaiga.', phoneset: '{name}: phone number save ho gaya.', needprof: 'Dukaan ka naam aur mobile number daalo.', writing: 'Message likh raha hoon…', hello: 'Hello, User', mgr: 'I am your dukan manager', reg: 'Register', login: 'Login', lang: 'Language', safe: '100% safe and secure · Made in India', search: 'Language search karo', email: 'Apna Gmail daalo', pass: 'Password', cont: 'Continue', needacc: 'Pehle account kholo: Gmail aur password daalo.', exists: 'Is Gmail ka account hai. Login karo.', wrong: 'Gmail ya password galat hai.', noacc: 'Account nahi mila. Pehle Register karo.', hint_type: 'Sale ya khata likho, jaise "5 chips 5 rupees per item sell hua, buy price 4.12" ya "Aman ke naam pe 500 khata add karo".', hint_ask: 'Kuch bhi pucho, jaise "Aaj kitna profit hua?" ya "Kis kis ka khata hai?"', tsell_d: 'Aaj ka total sell', tsell_w: 'Is hafte ka total sell', tsell_m: 'Is mahine ka total sell', tprofit_d: 'Aaj ka total profit', tprofit_w: 'Is hafte ka total profit', tprofit_m: 'Is mahine ka total profit', tsellrow: 'T-sell', upd: 'Update', prod: 'Product', sp: 'Sell', dash: 'Dashboard', tsell: 'Aaj ka total sell', tprofit: 'Aaj ka total profit', sell: 'Daily/Monthly Sell', profit: 'Daily/Monthly Profit', khata: 'Khata Book', type: 'Type message', ask: 'Question box', send: 'Send', voice: 'Voice assistant', speak: 'Bolne ke liye dabao', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', edit: 'Edit', del: 'Delete', save: 'Save', buy: 'Buy', pro: 'Profit', qty: 'Qty', settings: 'Setting', logout: 'Logout', nodata: 'Is date ka data nahi hai.', saved: 'Save ho gaya', askbuy: 'Buy price kya hai? Buy price boliye (per item).', askunit: 'Buy price per item hai ya total? Number batao, total ho to "total" likho.', useask: 'Sawal Question box mein pucho. Yahan sirf entry save hoti hai.', usesave: 'Entry Type message ya voice assistant se save karo.', dunno: 'Samajh nahi aaya. Jaise: "5 chips 5 rupees per item sell hua, buy price 4.12".', nosell: 'Aaj koi bikri nahi hui.', khadone: 'Khata update ho gaya', nokhata: 'Abhi koi khata nahi hai.', delq: 'Ye entry delete karein?', unsup: 'Is browser mein voice nahi chalta. Chrome use karo ya neeche likho.', listening: 'Sun raha hoon… rokne ke liye dabao', micblock: 'Mic band hai. Mic permission do, app ko new tab mein kholo, ya neeche likho.', nospeech: 'Kuch sunai nahi diya. Dubara dabakar bolo.', micerr: 'Voice nahi chali. Internet check karo ya neeche likho.', vtype: 'Ya yahan likho', curlbl: 'Currency Symbol', greet_m: 'Subah mubarak', greet_a: 'Namaste', greet_e: 'Shubh sandhya', q_item: 'Konse product hai? Product ka naam bataiye.', q_qty: 'Kitne unit hai? Unit kitna hai boliye.', q_sell: 'Sell price kya hai? Sell price boliye.', cancelled: 'Theek hai, cancel kar diya.', buylater: 'Theek hai. Buy price baad mein Sell page se Edit karke daal sakte ho.', missHead: 'Buy price missing hai, warna hum profit kaise nikalenge:', missQ: 'Buy price kya hai?', missHow: 'Number aur buy price boliye, jaise "1 4.12".', missDone: 'Ab sabhi entry mein buy price aa gaya.', remind: '{n} entry mein buy price nahi hai', remindgo: 'Abhi daalo', alltime: 'Aaj tak', tsell_x: 'Total sell', tprofit_x: 'Total profit', pmiss: '{n} entry mein buy price nahi, isliye profit mein nahi gini', vtip: 'Tip: keyboard ka mic dabakar neeche box mein bolo. Ye har phone par chalta hai.', vready: 'Mic dabakar bolo, ya neeche keyboard ke mic se bolo.' }
+};
+const S = Object.assign({ lang: 'hinglish', user: null, currency: '₹' }, load('dm_meta', {}));
+const t = k => (T[S.lang] || T.en)[k] || T.en[k] || k;
+const speechLang = () => (LANGS.find(l => l[0] === S.lang) || LANGS[0])[2];
+const meta = () => save('dm_meta', S);
+let D = { entries: [], khata: {} }, pending = null, period = 'daily', rmode = 'sell', stack = ['home'];
+const persist = () => S.user && save('dm_data_' + S.user, D);
+
+function applyLang() {
+  $$('[data-t]').forEach(e => e.textContent = t(e.dataset.t));
+  $$('[data-tp]').forEach(e => e.placeholder = t(e.dataset.tp));
+  document.documentElement.lang = ['hi', 'hinglish'].includes(S.lang) ? 'hi' : S.lang;
+  renderLangs();
+}
+function renderLangs() {
+  const ul = $('#langs'); if (!ul) return;
+  const q = ($('#lsearch') ? $('#lsearch').value : '').toLowerCase();
+  ul.innerHTML = LANGS.filter(l => l[1].toLowerCase().includes(q)).map(l => `<li data-l="${l[0]}" class="${l[0] === S.lang ? 'cur' : ''}">${l[1]}</li>`).join('');
+}
+
+function show(id, push = true) {
+  $$('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  if (push && stack[stack.length - 1] !== id) stack.push(id);
+  if (id === 'dash') renderDash();
+  if (id === 'report') renderReport();
+  if (id === 'khata') renderKhata();
+  if (id === 'vscreen') checkMic();
+  if (id === 'settings' && $('#set-shop')) { 
+    const p = D.profile || {}; 
+    $('#set-shop').value = p.shop || ''; 
+    $('#set-phone').value = p.phone || ''; 
+    $('#set-currency').value = S.currency || '₹'; 
+  }
+  window.scrollTo(0, 0);
+}
+function back() { stack.pop(); show(stack[stack.length - 1] || 'home', false); }
+
+let mode = 'reg';
+function openAuth(m) { mode = m; $('#authTitle').textContent = t(m); $('#autherr').textContent = ''; if ($('#regextra')) $('#regextra').hidden = m !== 'reg'; show('auth'); }
+function submitAuth() {
+  const e = $('#email').value.trim().toLowerCase(), p = $('#pass').value, users = load('dm_users', {});
+  if (!e || !p) return $('#autherr').textContent = t('needacc');
+  let prof = null;
+  if (mode === 'reg') {
+    const shop = ($('#shop').value || '').trim(), ph = cleanPhone($('#phone').value);
+    if (!shop) return $('#autherr').textContent = t('needshop');
+    if (!ph) return $('#autherr').textContent = t('needphone');
+    if (users[e]) return $('#autherr').textContent = t('exists');
+    users[e] = p; save('dm_users', users); prof = { shop, phone: ph };
+  }
+  else { if (!users[e]) return $('#autherr').textContent = t('noacc'); if (users[e] !== p) return $('#autherr').textContent = t('wrong'); }
+  S.user = e; meta(); D = load('dm_data_' + e, { entries: [], khata: {} }); if (prof) { D.profile = prof; persist() }
+  stack = ['dash']; show('dash', false); postMissing(); welcomeVoice(); if (!tourSeen()) tourOpen(); else permCheck();
+  if (!D.profile || !D.profile.shop || !D.profile.phone) { show('settings'); $('#profmsg').textContent = t('needprof') }
+}
+
+const sellOf = e => e.sell * e.qty, profOf = e => e.buy == null ? 0 : (e.sell - e.buy) * e.qty;
+function inPeriod(date, sel, per) {
+  const d = new Date(date), s = new Date(sel);
+  if (per === 'daily') return date === sel;
+  if (per === 'weekly') { const diff = (s - d) / 864e5; return diff >= 0 && diff < 7 }
+  return date.slice(0, 7) === sel.slice(0, 7);
+}
+const sums = (per, sel) => { const l = D.entries.filter(e => inPeriod(e.date, sel, per)); return { list: l, sell: r2(l.reduce((a, e) => a + sellOf(e), 0)), profit: r2(l.reduce((a, e) => a + profOf(e), 0)) } };
+
+function countTo(el, to) {
+  const c = cur();
+  const from = Number(el.dataset.v || 0); el.dataset.v = to;
+  if (from === to || (window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches)) { el.textContent = c + to; return }
+  const t0 = performance.now();
+  (function f(now) { const k = Math.min(1, (now - t0) / 600), e = 1 - Math.pow(1 - k, 3); el.textContent = c + r2(from + (to - from) * e); if (k < 1) requestAnimationFrame(f) })(t0);
+}
+function greet() {
+  const g = $('#dgreet'); if (!g) return;
+  const h = new Date().getHours(), nm = S.user ? cap(S.user.split('@')[0].replace(/[._\d]+/g, ' ').trim().split(' ')[0]) : '';
+  g.textContent = t(h < 12 ? 'greet_m' : h < 17 ? 'greet_a' : 'greet_e') + (nm ? ', ' + nm : '');
+}
+function renderDash() { const dd = $('#ddate'); if (dd) dd.innerHTML = ic('cal') + ' ' + new Date().toLocaleDateString(S.lang === 'hi' ? 'hi-IN' : 'en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); const s = sums('daily', today()); countTo($('#dsell'), s.sell); countTo($('#dprofit'), s.profit); { const ex = expSum('daily', today()); countTo($('#dexp'), ex); countTo($('#dnet'), r2(s.profit - ex)) } greet(); remindCard(); }
+function card(e, edit) {
+  const c = cur();
+  const p = e.buy == null ? '—' : c + r2(profOf(e));
+  if (!edit) return `<div class="card" data-id="${e.id}"><b>${t('prod')}: ${esc(e.item)}</b><div class="grid"><span>${t('qty')}: ${e.qty}</span><span>${t('buy')}: ${e.buy == null ? '—' : c + e.buy}</span><span>${t('sp')}: ${c}${e.sell}</span><span class="chip ${e.buy == null ? 'warn' : profOf(e) >= 0 ? 'up' : 'down'}">${t('pro')}: ${p}</span></div><span class="tsell">${t('tsellrow')} = ${c}${r2(sellOf(e))}</span><small>${fmtDMY(e.date)}${e.time ? ' · ' + fmtTime(e.time) : ''}</small><div class="row"><button data-act="edit">${t('edit')}</button><button data-act="del">${t('del')}</button></div></div>`;
+  return `<div class="card" data-id="${e.id}"><b>${t('prod')}: ${esc(e.item)}</b><div class="grid"><label>${t('qty')}<input type="number" step="any" data-f="qty" value="${e.qty}"></label><label>${t('buy')}<input type="number" step="any" data-f="buy" value="${e.buy ?? ''}"></label><label>${t('sp')}<input type="number" step="any" data-f="sell" value="${e.sell}"></label><label>${t('pro')}<input data-f="pro" readonly value="${e.buy == null ? '' : r2(profOf(e))}"></label></div><button data-act="save">${t('upd')}</button></div>`;
+}
+const expSum = (per, sel) => r2((D.expenses || []).filter(e => inPeriod(e.date, sel, per)).reduce((a, e) => a + Number(e.amount), 0));
+const expCard = e => `<div class="card" data-eid="${e.id}"><b>${esc(e.title)}</b><span class="tsell">${cur()}${r2(e.amount)}</span><small>${fmtDMY(e.date)}${e.time ? ' · ' + fmtTime(e.time) : ''}</small><div class="row"><button data-eact="del" aria-label="Delete">${ic('trash')}</button></div></div>`;
+function renderReport() {
+  $('#rtitle').textContent = t(rmode);
+  $$('[data-per]').forEach(b => b.classList.toggle('on', b.dataset.per === period));
+  const sel = $('#rdate').value || ($('#rdate').value = today()), s = sums(period, sel), ex = expSum(period, sel), c = cur();
+  const k = (rmode === 'sell' ? 'tsell_' : rmode === 'profit' ? 'tprofit_' : 'texp_') + period[0], val = rmode === 'sell' ? s.sell : rmode === 'profit' ? s.profit : ex;
+  $('#rtotal').textContent = `${t(k)} = ${c}${val}` + (rmode === 'sell' ? '' : `\n${t('tnet_x')} = ${c}${r2(s.profit - ex)}`);
+  const list = rmode === 'expense' ? (D.expenses || []).filter(e => inPeriod(e.date, sel, period)).map(expCard) : s.list.map(e => card(e));
+  $('#rlist').innerHTML = list.length ? list.join('') : `<div class="empty"><i>${ic('inbox')}</i>${t('nodata')}</div>`;
+}
+const cap = w => w.charAt(0).toUpperCase() + w.slice(1);
+const khArr = n => { const v = D.khata[n]; if (Array.isArray(v)) return v; return D.khata[n] = typeof v === 'number' ? [{ id: 0, date: '', amount: v }] : [] };
+const KHQ = /khata|खाता|udhar|udhaar|baki|baaki|उधार|बाकी/i;
+const fmtDMY = iso => iso ? iso.split('-').reverse().join('/') : '—';
+function khataReply(text) {
+  const names = Object.keys(D.khata); if (!names.length) return t('nokhata');
+  const s = text.toLowerCase(), hit = names.filter(n => s.includes(n.toLowerCase())), hi = S.lang === 'hi', c = cur();
+  return (hit.length ? hit : names).map((n, i) => {
+    const rows = khArr(n).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.id - a.id);
+    return `${i + 1}. ${n}\n` + rows.map(x => `${hi ? 'तारीख' : 'Date'}:${fmtDMY(x.date)}\n${x.amount < 0 ? c + ' -' + r2(-x.amount) + ' (' + t('khrcv') + ')' : c + ' ' + r2(x.amount)}`).join('\n') + `\n${hi ? 'कुल' : 'Total'}: ${c}${khTotal(n)}`;
+  }).join('\n');
+}
+const khTotal = n => r2(khArr(n).reduce((a, x) => a + Number(x.amount), 0));
+const fmtDate = iso => { if (!iso) return '—'; const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(S.lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) };
+const kmeta = n => { D.kmeta = D.kmeta || {}; return D.kmeta[n] || (D.kmeta[n] = { phone: '', every: 3, last: '', time: '10:00' }) };
+const hhmmNow = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') };
+const cleanPhone = x => { const d = String(x || '').replace(/\D/g, ''); return d.length >= 10 ? d.slice(-10) : '' };
+const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 864e5);
+const remOn = () => !D.prefs || D.prefs.remind !== false;
+const dueList = () => !remOn() ? [] : Object.keys(D.khata).filter(n => { const m = kmeta(n); if (m.off) return false; const ok = !m.last || daysBetween(m.last, today()) >= m.every; return m.phone && khTotal(n) > 0 && ok && (hhmmNow() >= (m.time || '10:00') || (m.last && daysBetween(m.last, today()) > m.every)) });
+const langName = () => (LANGS.find(l => l[0] === S.lang) || LANGS[0])[1];
+function renderDue() { const c = $('#due'); if (!c) return; const n = dueList().length; c.hidden = !n; const x = $('#duetxt'); if (x) x.textContent = t('dueTxt').replace('{n}', n) }
+const TOUR = [['mic', '1'], ['msg', '2'], ['book', '3'], ['rupee', '4'], ['help', '5'], ['sliders', '6']];
+let tourI = 0;
+const tourSeen = () => { try { return localStorage.getItem('dm_tour_' + S.user) } catch { return '1' } };
+function tourShow() {
+  const [icn, k] = TOUR[tourI];
+  $('#tourico').innerHTML = ic(icn); $('#tourt').textContent = t('tour' + k + 't'); $('#tourb').textContent = t('tour' + k + 'b');
+  $('#tourdots').innerHTML = TOUR.map((_, i) => `<i class="${i === tourI ? 'on' : ''}"></i>`).join('');
+  $('#tournext span').textContent = t(tourI === TOUR.length - 1 ? 'tdone' : 'tnext');
+}
+function tourOpen() { tourI = 0; $('#tour').hidden = false; tourShow() }
+function tourClose() { $('#tour').hidden = true; try { localStorage.setItem('dm_tour_' + S.user, '1') } catch { } permCheck() }
+function tourNext() { if (tourI < TOUR.length - 1) { tourI++; tourShow() } else tourClose() }
+function welcomeVoice() { speak(t('welcome').replace('{shop}', (D.profile && D.profile.shop) || '')) }
+function khMsgText(n) {
+  const tot = khTotal(n), shop = (D.profile && D.profile.shop) || '', c = cur();
+  if (S.lang === 'hi') return `प्रिय ${n},\nआपके नाम पर ${c}${tot} बाकी हैं।\nदुकान का नाम - ${shop}`;
+  if (S.lang === 'en') return `Dear ${n},\nYou have ${c}${tot} pending.\nShop name - ${shop}`;
+  return `Dear ${n},\nApke naam pe ${c}${tot} baki hai.\nDukaan ka name - ${shop}`;
+}
+async function khMsgAI(n) {
+  const base = khMsgText(n); if (!sampleNS) return base;
+  try {
+    const rows = khArr(n).map(x => `${fmtDMY(x.date)}: ${cur()}${x.amount}`).join('; '), shop = (D.profile && D.profile.shop) || '';
+    const r = await sampleNS.json(`Write a short, polite, friendly payment reminder SMS (max 3 lines, no emojis) in ${langName()} for customer "${n}". Pending total ${cur()}${khTotal(n)} (${rows}). Shop name: "${shop}". Start with "Dear ${n}," and end with the shop name. Return JSON {"message": "..."} only.`, { modelTier: 'quick', cache: false });
+    return r && r.message ? String(r.message) : base;
+  } catch { return base }
+}
+let kmsgFor = null;
+function kmLinks() {
+  const n = kmsgFor; if (!n) return;
+  const m = kmeta(n), ph = m.phone, tx = encodeURIComponent($('#kmsgtxt').value);
+  $('#kmsgsms').href = `sms:+91${ph}?body=${tx}`; $('#kmsgwa').href = `https://wa.me/91${ph}?text=${tx}`;
+  const now = new Date(), [hh, mi] = (m.time || '10:00').split(':').map(Number), st = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mi); if (st <= now) st.setDate(st.getDate() + 1);
+  const p2 = x => String(x).padStart(2, '0'), f = d => `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}T${p2(d.getHours())}${p2(d.getMinutes())}00`, en = new Date(st.getTime() + 30 * 6e4);
+  const cal = $('#kmsgcal'); if (cal) cal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Khata reminder: ' + n + ' ' + cur() + khTotal(n))}&details=${encodeURIComponent($('#kmsgtxt').value)}&dates=${f(st)}/${f(en)}&recur=${encodeURIComponent('RRULE:FREQ=DAILY;INTERVAL=' + m.every)}`;
+}
+async function openKmsg(n) {
+  kmsgFor = n; $('#kmsgbox').hidden = false; $('#kmsgto').textContent = n + ' · +91 ' + kmeta(n).phone;
+  $('#kmsgtxt').value = t('writing'); const txt = await khMsgAI(n); if (kmsgFor !== n) return;
+  $('#kmsgtxt').value = txt; kmLinks(); window.scrollTo(0, 0);
+}
+function markSent() { if (!kmsgFor) return; kmeta(kmsgFor).last = today(); persist(); renderKhata(); renderDash() }
+const khMeta = (n, edit) => {
+  const m = kmeta(n);
+  if (edit) return `<div class="khm ed" data-n="${esc(n)}"><input type="tel" inputmode="tel" data-km="phone" placeholder="${t('phoneph')}" value="${m.phone}"><input type="number" min="1" data-km="every" value="${m.every}" aria-label="days"><input type="time" data-km="time" value="${m.time || '10:00'}" aria-label="time"><button class="mini" data-kmact="save" aria-label="Save">✔</button></div>`;
+  return `<div class="khm${dueList().includes(n) ? ' due' : ''}" data-n="${esc(n)}"><span>${ic('phone')} ${m.phone ? '+91 ' + m.phone : t('nophone')}</span><span>${ic('bell')} ${t('every').replace('{n}', m.every)} · ${m.time || '10:00'}${m.off ? ' · ' + t('remoff') : ''}</span><span class="acts"><button class="mini" data-kmact="edit" aria-label="Edit">${ic('pen')}</button><button class="mini" data-kmact="send" aria-label="Send">${ic('send')}</button></span></div>`;
+};
+function renderRemToggle() { const b = $('#remtoggle'); if (!b) return; b.textContent = t(remOn() ? 'remon' : 'remoff'); b.classList.toggle('off', !remOn()) }
+function setRem(v) { D.prefs = D.prefs || {}; D.prefs.remind = v; persist(); renderRemToggle(); renderDash(); renderKhata() }
+function permCheck() { if (!S.user || (D.prefs && D.prefs.remind !== undefined)) return; const p = $('#perm'); if (p) p.hidden = false }
+function reminderToggleCmd(text) {
+  const s = text.toLowerCase();
+  if (!/remind|massage|message|msg|मैसेज|रिमाइंडर/.test(s)) return null;
+  const off = /band|stop|\boff\b|बंद/.test(s), on = /chalu|start|\bon\b|shuru|चालू|शुरू/.test(s);
+  if (off === on) return null;
+  const hit = Object.keys(D.khata).find(n => s.includes(n.toLowerCase()));
+  if (hit) { kmeta(hit).off = off; persist(); renderDash(); renderKhata(); return t(off ? 'remcoff' : 'remcon').replace('{name}', hit) }
+  setRem(!off); return t(off ? 'remalloff' : 'remallon');
+}
+function reminderCmd(text) {
+  const s = text.toLowerCase(), hit = Object.keys(D.khata).find(n => s.includes(n.toLowerCase())); if (!hit) return null;
+  if (/khata|खाता/.test(s) && !/remind|रिमाइंडर/.test(s)) return null;
+  const ph = (s.match(/(?:\+?91[\s-]?)?\b([6-9]\d{9})\b/) || [])[1], ev = s.match(/(\d+)\s*(?:din|days?|दिन)/);
+  if (ph && /phone|mobile|number|फोन|मोबाइल|नंबर/.test(s)) { kmeta(hit).phone = ph; persist(); renderDash(); return t('phoneset').replace('{name}', hit) }
+  const tm = s.match(/(\d{1,2})(?::(\d{2}))?\s*(?:baje|bje|am\b|pm\b|बजे)/), wantsRem = /remind|massage|message|msg|मैसेज|रिमाइंडर/.test(s);
+  if ((ev || tm) && wantsRem) {
+    const m = kmeta(hit); let out = [];
+    if (ev && Number(ev[1]) >= 1 && !tm) { m.every = Number(ev[1]); out.push(t('remset').replace('{name}', hit).replace('{n}', m.every)) }
+    else if (ev && Number(ev[1]) >= 1) m.every = Number(ev[1]);
+    if (tm) {
+      let h = Number(tm[1]); const pm = /shaam|sham|raat|evening|night|pm\b|शाम|रात|dopahar|दोपहर/.test(s), am = /subah|morning|am\b|सुबह/.test(s);
+      if (pm && h < 12) h += 12; if (am && h === 12) h = 0; if (h > 23) return null;
+      m.time = String(h).padStart(2, '0') + ':' + (tm[2] || '00'); out = [(ev ? t('remset').replace('{name}', hit).replace('{n}', m.every) + '\n' : '') + t('remtime').replace('{name}', hit).replace('{t}', m.time)];
+    }
+    persist(); renderDash(); return out.join('\n');
+  }
+  return null;
+}
+const khEdit = (n, x) => `<div class="khe ed" data-n="${esc(n)}" data-id="${x.id}"><input type="date" data-kf="date" value="${x.date}"><input type="number" step="any" data-kf="amount" value="${x.amount}"><button class="mini" data-kact="save" aria-label="Save">✔</button></div>`;
+const khRow = (n, x) => {
+  const c = cur();
+  return `<div class="khe" data-n="${esc(n)}" data-id="${x.id}"><span>${ic('cal')} ${fmtDate(x.date)}</span><span class="${x.amount < 0 ? 'pay' : ''}">${x.amount < 0 ? '−' + c + r2(-x.amount) + ' ' + t('khrcv') : c + r2(x.amount)}</span><span class="acts"><button class="mini" data-kact="edit" aria-label="Edit">${ic('pen')}</button><button class="mini" data-kact="del" aria-label="Delete">${ic('trash')}</button></span></div>`;
+};
+function renderKhata() {
+  renderRemToggle();
+  const k = Object.keys(D.khata), c = cur();
+  $('#klist').innerHTML = k.length ? k.map(n => `<div class="khc"><div class="kh"><i>${esc(n).charAt(0).toUpperCase()}</i><b>${esc(n)}</b><span>${c}${khTotal(n)}</span></div>${khMeta(n)}${khArr(n).map(x => khRow(n, x)).join('')}</div>`).join('') : `<div class="empty"><i>${ic('book')}</i>${t('nokhata')}</div>`;
+}
+
+const SYS = `You are the AI of a shopkeeper app. Reply ONLY JSON: {"intent":"sell|khata|khata_pay|expense|question|unknown","item":str|null,"qty":num|null,"sell":num|null (per unit),"buy":num|null,"buyType":"unit|total|unknown|none","name":str,"amount":num,"title":str|null,"answer":str}.
+Rules: "karke"/"per item"/"each" mean per unit. If sell price is a total, divide by qty. If the sell price is per item and a buy price is given without the word total, the buy price is per unit (buyType="unit"); use "unknown" only when truly unclear. Save only the extracted fields, never the sentence. Write "item" and "name" in the app language given as LANGUAGE (translate or transliterate). No buy price: buyType="none". khata_pay = a customer paid back all or part of his khata (name, amount; amount null if fully paid and none said). expense = a shop expense like rent, light bill, tea (title, amount). Khata = money a customer owes: intent khata, name, amount, phone (10 digits, only if said) and every (days between reminders, only if said, e.g. "har 3 din"). For questions answer in "answer" using the DATA, in the language the user asked in, short and exact (profit=(sell-buy)*qty). Any product is allowed. If item, qty or sell price is missing from the message, set it to null; never guess.`;
+
+async function ai(text) {
+  const HARDCODED_KEY = "Yahan_Apni_OpenAI_API_Key_Daal_Dein"; // Yahan apni OpenAI API key daal dein
+  
+  if (HARDCODED_KEY && HARDCODED_KEY !== "AQ.Ab8RN6KC-c1EBgBG29zEdoHoizG1wqkiuUW_jz84QznsRN659w") {
+    try {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + HARDCODED_KEY },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [{ role: 'system', content: SYS }, { role: 'user', content: `DATA: ${JSON.stringify({ today: today(), entries: D.entries.slice(-300), khata: D.khata })}\nLANGUAGE: ${(LANGS.find(l => l[0] === S.lang) || LANGS[0])[1]}\nMESSAGE: ${text}` }],
+          temperature: 0
+        })
+      });
+      const data = await res.json();
+      const txt = data.choices[0].message.content.trim();
+      return JSON.parse(txt.replace(/```json|```/g, '').trim());
+    } catch { return local(text); }
+  }
+  return local(text);
+}
+
+function local(x) {
+  const s = x.toLowerCase(), nums = (s.match(/\d+(?:\.\d+)?/g) || []).map(Number);
+  const kh = s.match(/([a-z\u0900-\u097f]+)\s+(?:ke\s+naam|के\s+नाम)?\s*(?:pe|par|पर)?\s*(\d+(?:\.\d+)?)\s*(?:rupees?|rs|₹|\$|€|£)?\s*(?:ka\s+)?(?:khata|खाता)/);
+  const strongPay = /lauta|wapas|vapas|chuka|chukta|jama|paid|returned|लौटा|वापस|चुका|जमा/.test(s), softPay = /de diya|de diye|de di\b|दे दिया/.test(s);
+  if (((/khata|खाता/.test(s) && (strongPay || softPay)) || (strongPay && /\bne\b|ने/.test(s))) && !/\b(add|jod|badha)\b|जोड़/.test(s)) {
+    const s1 = s.replace(/\d+\s*(?:din|days?|दिन)/g, ' '), n1 = (s1.match(/\d+(?:\.\d+)?/g) || []).map(Number);
+    const nm = Object.keys(D.khata).find(k => s.includes(k.toLowerCase())) || (s.match(/([a-z\u0900-\u097f]+)\s+(?:ke|ka|ki|ne|के|का|की|ने)\s/) || [])[1] || '';
+    return { intent: 'khata_pay', name: cap(nm), amount: n1.length ? n1[0] : null };
+  }
+  if (/khata|खाता/.test(s) && /add|jod|badha|जोड़|karo|kar do|likh|daal|करो|दर्ज/.test(s) && nums.length) {
+    const phm = s.match(/(?:\+?91[\s-]?)?\b([6-9]\d{9})\b/), evm = s.match(/(?:har|every|हर)\s*(\d+)\s*(?:din|days?|दिन)/);
+    let s1 = s; if (phm) s1 = s1.replace(phm[0], ' '); if (evm) s1 = s1.replace(evm[0], ' ');
+    s1 = s1.replace(/\d+\s*(?:din|days?|दिन)/g, ' ');
+    const n1 = (s1.match(/\d+(?:\.\d+)?/g) || []).map(Number); if (!n1.length) return { intent: 'unknown' };
+    const m = s1.match(/([a-z\u0900-\u097f]+)\s+(?:ke\s+naam|के\s+नाम)/);
+    return { intent: 'khata', name: cap(m ? m[1] : (kh ? kh[1] : 'unknown')), amount: n1[0], phone: phm ? phm[1] : null, every: evm ? Number(evm[1]) : null };
+  }
+  const isQ = /\?|kitn|kitna|kitne|kis kis|how much|total|कितन|कौन/.test(s), sellW = /sell|bika|bike|bikri|बिक|बेच|सेल/.test(s);
+  if (isQ && (!sellW || !nums.length)) return { intent: 'question' };
+  if (/kharcha|kharch|expense|expence|खर्च/.test(s) && nums.length) {
+    const title = s.replace(/\d+(?:\.\d+)?/g, ' ').split(/[^a-z\u0900-\u097f]+/).filter(w => w && !STOP.has(w) && !/^(kharcha|kharch|expense|expence|add|karo|likho|kiya|खर्च|खर्चा)$/.test(w)).join(' ');
+    return { intent: 'expense', title: title ? cap(title) : 'Kharcha', amount: nums[0] };
+  }
+  if (sellW) {
+    const bm = s.match(/(?:buy|kharid|khareed|खरीद|बाय)\D{0,15}(\d+(?:\.\d+)?)/), s2 = bm ? s.replace(bm[0], ' ') : s;
+    const ns = (s2.match(/\d+(?:\.\d+)?/g) || []).map(Number), money = /\d+(?:\.\d+)?\s*(?:rs|rupees?|rupaye|₹|\$|€|£|रुपये|रुपया)/.test(s2);
+    let qty = null, sell = null, item = null;
+    if (ns.length >= 2) { qty = ns[0]; sell = ns[1]; if (/total|kul/.test(s2)) sell = r2(sell / qty) } else if (ns.length === 1) { if (money) sell = ns[0]; else qty = ns[0] }
+    for (const m of s2.matchAll(/\d+(?:\.\d+)?\s*(?:pkts?|packets?|pekets?|pakets?|pieces?|pcs|kg)?\s*([a-z\u0900-\u097f]+)/g)) if (!STOP.has(m[1])) { item = m[1]; break }
+    if (!item) item = s2.split(/[^a-z\u0900-\u097f]+/).find(w => w && !STOP.has(w)) || null;
+    const buy = bm ? Number(bm[1]) : null;
+    return { intent: 'sell', item, qty, sell, buy, buyType: buy == null ? 'none' : /total|kul/.test(s) ? 'total' : /per|item|unit|each|karke|पीस|प्रति|हर/.test(s) ? 'unit' : 'unknown' };
+  }
+  return { intent: 'unknown' };
+}
+function localAnswer(x) {
+  const s = x.toLowerCase(), c = cur();
+  if (/khata|खाता/.test(s)) return khataReply(x);
+  const d = sums('daily', today());
+  if (/profit|munafa|labh|मुनाफ/.test(s)) return `${c}${d.profit}`;
+  if (/sell|bika|bikri|बिक/.test(s)) return d.list.length ? `${d.list.map(e => e.qty + ' ' + e.item).join(', ')} · ${c}${d.sell}` : t('nosell');
+  return t('dunno');
+}
+
+const fmtTime = hm => { if (!hm) return ''; const [h, m] = hm.split(':').map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString(S.lang === 'hi' ? 'hi-IN' : 'en-IN', { hour: 'numeric', minute: '2-digit' }) };
+const nowHM = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') };
+const noBuy = () => D.entries.filter(e => e.buy == null);
+let listAsk = null;
+function missingMsg() {
+  const ms = noBuy(), c = cur(); if (!ms.length) { listAsk = null; return null }
+  listAsk = ms.map(e => e.id);
+  return t('missHead') + '\n' + ms.map((e, i) => `${i + 1}. ${e.item} × ${e.qty} @ ${c}${e.sell} · ${fmtDMY(e.date)}${e.time ? ' ' + fmtTime(e.time) : ''}\n${t('missQ')}`).join('\n') + '\n' + t('missHow');
+}
+function postMissing() {
+  const m = missingMsg(), log = $('#log-type'); if (!m || !log) return;
+  log.insertAdjacentHTML('beforeend', `<div class="msg bot">${esc(m)}</div>`);
+}
+function remindCard() {
+  renderDue();
+  const rm = $('#remind'); if (!rm) return;
+  const n = noBuy().length; rm.hidden = !n;
+  const rt = $('#remindtxt'); if (rt) rt.textContent = t('remind').replace('{n}', n);
+}
+function answerMissing(text) {
+  if (!listAsk || /sell|bika|bikri|khata|बिक|बेच|सेल|खाता|\?/i.test(text)) return null;
+  const toks = (text.match(/\d+(?:\.\d+)?/g) || []).map(Number); if (!toks.length) return null;
+  const total = /total|kul/i.test(text), left0 = noBuy(), c = cur();
+  if (toks.length === 1 && left0.length === 1) {
+    const e = left0[0]; e.buy = total ? r2(toks[0] / e.qty) : toks[0]; persist(); renderDash(); listAsk = null; pending = null;
+    return `${t('saved')}: ${e.item} · ${t('pro')} ${c}${r2(profOf(e))}`;
+  }
+  const live = listAsk.map(id => D.entries.find(e => e.id === id)), pairs = [];
+  if (toks.length % 2 === 0) for (let i = 0; i < toks.length; i += 2) pairs.push([toks[i], toks[i + 1]]);
+  if (!pairs.length || pairs.some(([i]) => !Number.isInteger(i) || i < 1 || i > live.length || !live[i - 1])) return t('missHow');
+  const out = [];
+  for (const [i, p] of pairs) { const e = live[i - 1]; e.buy = total ? r2(p / e.qty) : p; out.push(`${i}. ${e.item}: ${t('buy')} ${c}${e.buy} · ${t('pro')} ${c}${r2(profOf(e))}`) }
+  persist(); renderDash(); pending = null;
+  return t('saved') + '\n' + out.join('\n') + (noBuy().length ? '\n\n' + missingMsg() : (listAsk = null, '\n' + t('missDone')));
+}
+function periodAnswer(text) {
+  const s = text.toLowerCase(), sellW = /sell|bikri|bika|बिक|बेच|सेल/.test(s), profW = /profit|munafa|labh|मुनाफ|लाभ/.test(s);
+  const expW = /kharcha|kharch|expense|expence|खर्च/.test(s);
+  if (!sellW && !profW && !expW) return null;
+  const cy = new Date().getFullYear(), ym = today().slice(0, 7), yr = (s.match(/\b(20\d\d)\b/) || [])[1], loc = S.lang === 'hi' ? 'hi-IN' : 'en-IN';
+  let label, f;
+  if (yr) { label = yr; f = e => e.date.startsWith(yr) }
+  else if (/pichle saal|last year|पिछले साल/.test(s)) { label = String(cy - 1); f = e => e.date.startsWith(label) }
+  else if (/is saal|this year|इस साल/.test(s)) { label = String(cy); f = e => e.date.startsWith(label) }
+  else if (/is mahine|this month|इस महीने/.test(s)) { label = new Date(cy, Number(ym.slice(5)) - 1).toLocaleDateString(loc, { month: 'long', year: 'numeric' }); f = e => e.date.startsWith(ym) }
+  else if (/is hafte|this week|इस हफ्ते|इस हफ़्ते/.test(s)) { label = t('weekly'); f = e => inPeriod(e.date, today(), 'weekly') }
+  else if (/aaj tak|ab tak|abhi tak|till now|so far|overall|all.?time|आज तक|अब तक|अभी तक|shuru se|शुरू से/.test(s)) { label = t('alltime'); f = () => true }
+  else if (/\baaj\b|today|आज/.test(s) && (expW || /net/.test(s))) { label = new Date().toLocaleDateString(loc, { day: 'numeric', month: 'short' }); f = e => e.date === today() }
+  else return null;
+  const L = D.entries.filter(f), E = (D.expenses || []).filter(f), c = cur();
+  if (!L.length && !E.length) return label + '\n' + t('nodata');
+  const ts = r2(L.reduce((a, e) => a + sellOf(e), 0)), tp = r2(L.reduce((a, e) => a + profOf(e), 0)), te = r2(E.reduce((a, e) => a + Number(e.amount), 0)), nm = L.filter(e => e.buy == null).length;
+  const net = /net/.test(s), both = !expW && sellW === profW;
+  let out = label;
+  if (sellW || both) out += `\n${t('tsell_x')}: ${c}${ts}`;
+  if (profW || both) out += `\n${t('tprofit_x')}: ${c}${tp}`;
+  if (expW || both || net) out += `\n${t('texp_x')}: ${c}${te}`;
+  if (profW || both || net) out += `\n${t('tnet_x')}: ${c}${r2(tp - te)}`;
+  if (nm && (profW || both)) out += `\n(${t('pmiss').replace('{n}', nm)})`;
+  return out;
+}
+async function checkMic() {
+  const v = $('#vtext'); if (!v) return;
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!R) { v.textContent = t('unsup'); return }
+  try { const p = await navigator.permissions.query({ name: 'microphone' }); if (p.state === 'denied') { v.textContent = t('micblock'); return } } catch { }
+  v.textContent = t('vready');
+}
+const STOP = new Set(['aaj', 'abhi', 'ab', 'maine', 'mene', 'ne', 'ka', 'ki', 'ke', 'ko', 'se', 'hua', 'hui', 'hue', 'hai', 'ho', 'sell', 'sold', 'bika', 'bike', 'bikri', 'rs', 'rupees', 'rupee', 'rupaye', 'per', 'item', 'items', 'unit', 'units', 'karke', 'buy', 'price', 'kharida', 'khareed', 'total', 'kul', 'packet', 'packets', 'pkt', 'peket', 'paket', 'piece', 'pieces', 'pcs', 'kg', 'ek', 'me', 'main', 'mein', 'pe', 'par', 'aur', 'and', 'today', 'for', 'each', 'of', 'the', 'a', 'i', 'bought', 'at', 'product', 'naam', 'name', 'konsa', 'konse', 'ye', 'yeh', 'wo', 'woh', 'take', 'tak', 'tk', 'pakets', 'pekets', 'pkts', 'आज', 'अभी', 'का', 'की', 'के', 'को', 'से', 'बिका', 'बिके', 'बिकी', 'सेल', 'रुपये', 'रुपया', 'प्रति', 'खरीद', 'बाय', 'प्राइस', 'हुआ', 'हुई', 'हुए', 'है', 'नाम', 'प्रोडक्ट']);
+let draft = null;
+const need = d => !d.item ? 'item' : !(d.qty > 0) ? 'qty' : d.sell == null ? 'sell' : null;
+function advance() { const f = need(draft); if (f) return t('q_' + f); const d = draft; draft = null; return commitSale(d) }
+function fillDraft(text) {
+  if (/cancel|rehne do|chhod do|रहने दो|छोड़ दो/i.test(text)) { draft = null; return t('cancelled') }
+  const f = need(draft), n = (text.match(/\d+(?:\.\d+)?/) || [])[0], cmd = /sell|bika|bikri|khata|खाता|बिक|\?/i.test(text);
+  if (f === 'item') {
+    if (cmd || n != null) { draft = null; return null }
+    const w = text.trim().split(/\s+/).filter(x => !STOP.has(x.toLowerCase())).join(' ');
+    if (!w) return t('q_item'); draft.item = w;
+  } else {
+    if (cmd) { draft = null; return null }
+    if (n == null) return t('q_' + f);
+    draft[f] = Number(n);
+  }
+  return advance();
+}
+function commitSale(r) {
+  const e = { id: Date.now(), date: today(), time: nowHM(), item: r.item, qty: r.qty, sell: r.sell, buy: null }, c = cur();
+  if (r.buy != null && r.buyType === 'total') e.buy = r2(r.buy / r.qty); else if (r.buy != null && r.buyType !== 'unknown') e.buy = Number(r.buy);
+  D.entries.push(e); persist(); renderDash();
+  if (r.buy == null || r.buyType === 'none') { pending = { id: e.id }; return `${t('saved')}: ${e.item} × ${e.qty} @ ${c}${e.sell}. ${t('askbuy')}` }
+  if (r.buyType === 'unknown') { pending = { id: e.id, raw: Number(r.buy) }; return `${t('saved')}: ${e.item} × ${e.qty} @ ${c}${e.sell}. ${t('askunit')}` }
+  return `${t('saved')}: ${e.item} × ${e.qty} · ${t('sp')} ${c}${e.sell} · ${t('buy')} ${c}${e.buy} · ${t('pro')} ${c}${r2(profOf(e))}`;
+}
+async function handle(text, m) {
+  const SALE = /sell|bika|bike|bikri|khata|खाता|बिक|बेच|सेल/i;
+  if (m !== 'ask' && draft) { const d = fillDraft(text); if (d) return d }
+  if (m !== 'ask' && pending && /baad mein|later|skip|nahi pata|pata nahi|बाद में|abhi nahi/i.test(text)) { pending = null; return t('buylater') }
+  if (m !== 'ask' && listAsk && !/din|days?|remind|दिन|phone|mobile/i.test(text)) { const lr = answerMissing(text); if (lr) return lr }
+  if (pending && /\d/.test(text) && !SALE.test(text) && !/din|days?|remind|दिन|phone|mobile/i.test(text)) {
+    const e = D.entries.find(z => z.id === pending.id), n = (text.match(/\d+(?:\.\d+)?/) || [])[0] ?? pending.raw, c = cur();
+    if (e) { e.buy = /total|kul/i.test(text) ? r2(Number(n) / e.qty) : Number(n); persist(); renderDash(); pending = null; return `${t('saved')}: ${e.item} · ${t('pro')} ${c}${r2(profOf(e))}` }
+  }
+  if (m !== 'ask') { const rt = reminderToggleCmd(text); if (rt) return rt; const rc = reminderCmd(text); if (rc) return rc }
+  if (m !== 'type' && /missing|buy price (nahi|baki|batana)|kiska buy|किसका खरीद/i.test(text) && !/\d/.test(text)) return missingMsg() || t('missDone');
+  if (m !== 'type') { const pa = periodAnswer(text); if (pa) return pa }
+  if (m !== 'type' && KHQ.test(text) && !/\d/.test(text) && !/add|jod|badha|जोड़/i.test(text) && !/lauta|wapas|vapas|chuka|chukta|jama|paid|returned|de diya|de diye|लौटा|वापस|चुका|जमा|दे दिया/i.test(text)) return khataReply(text);
+  const r = await ai(text);
+  if (r.intent === 'question') return m === 'type' ? t('useask') : (r.answer || localAnswer(text));
+  if (r.intent === 'khata_pay') {
+    if (m === 'ask') return t('usesave');
+    const key = Object.keys(D.khata).find(k => k.toLowerCase() === String(r.name || '').trim().toLowerCase()), c = cur();
+    if (!key) return t('noname');
+    let amt = Number(r.amount); if (!(amt > 0)) amt = khTotal(key); if (!(amt > 0)) return t('dunno');
+    khArr(key).push({ id: Date.now(), date: today(), amount: -amt, pay: true }); persist(); renderDash();
+    const left = khTotal(key);
+    return t('khapaid').replace('{name}', key).replace('{amt}', r2(amt)).replace('{cur}', c) + '\n' + (left > 0 ? t('khaleft').replace('{amt}', left).replace('{cur}', c) : t('khaclear'));
+  }
+  if (r.intent === 'expense') {
+    if (m === 'ask') return t('usesave');
+    const amt = Number(r.amount), c = cur(); if (!(amt > 0)) return t('dunno');
+    D.expenses = D.expenses || []; D.expenses.push({ id: Date.now(), date: today(), time: nowHM(), title: String(r.title || 'Kharcha').trim(), amount: amt }); persist(); renderDash();
+    return t('expsaved').replace('{title}', String(r.title || 'Kharcha').trim()).replace('{amt}', r2(amt)).replace('{cur}', c) + '\n' + t('exptoday').replace('{amt}', expSum('daily', today())).replace('{cur}', c);
+  }
+  if (r.intent === 'sell' || r.intent === 'khata') {
+    if (m === 'ask') return t('usesave');
+    if (r.intent === 'khata') {
+      const n = String(r.name || '?').trim(), key = Object.keys(D.khata).find(k => k.toLowerCase() === n.toLowerCase()) || n, c = cur();
+      if (isNaN(Number(r.amount))) return t('dunno');
+      khArr(key).push({ id: Date.now(), date: today(), amount: Number(r.amount) });
+      const mm = kmeta(key), ph = cleanPhone(r.phone); if (ph) mm.phone = ph; if (Number(r.every) >= 1) mm.every = Math.round(Number(r.every));
+      persist(); renderDash();
+      return `${t('khadone')}: ${key} ${c}${khTotal(key)} · 📅 ${fmtDate(today())}` + (ph ? `\n📞 +91 ${ph}` : '') + (ph || Number(r.every) >= 1 ? `\n🔔 ${t('every').replace('{n}', mm.every)}` : '');
+    }
+    pending = null; listAsk = null;
+    draft = { item: r.item ? String(r.item).trim() : null, qty: Number(r.qty) > 0 ? Number(r.qty) : null, sell: r.sell == null || isNaN(Number(r.sell)) ? null : Number(r.sell), buy: r.buy, buyType: r.buyType };
+    return advance();
+  }
+  return r.answer || t('dunno');
+}
+
+async function send(m) {
+  const inp = $('#in-' + m), text = inp.value.trim(); if (!text) return;
+  const log = $('#log-' + m); inp.value = '';
+  log.insertAdjacentHTML('beforeend', `<div class="msg me">${esc(text)}</div>`);
+  const a = await handle(text, m);
+  log.insertAdjacentHTML('beforeend', `<div class="msg bot">${esc(a)}</div>`); log.lastElementChild.scrollIntoView();
+}
+
+function speak(txt) {
+  if (!window.speechSynthesis) return;
+  const clean = txt.replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, '').replace(/[₹\$€£د.إ৳]\s*([\d.]+)/g, '$1 ' + (S.lang === 'hi' ? 'रुपये' : ''));
+  const u = new SpeechSynthesisUtterance(clean); u.lang = speechLang(); speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+async function runVoice(x) {
+  $('#vtext').textContent = x + '\n…';
+  const a = await handle(x, 'voice');
+  $('#vtext').textContent = x + '\n' + a; speak(a);
+}
+let rec = null;
+function listen() {
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!R) return $('#vtext').textContent = t('unsup');
+  if (rec) { try { rec.stop() } catch { } return }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  rec = new R(); rec.lang = speechLang(); rec.interimResults = true;
+  let last = '';
+  $('#blob').classList.add('on'); $('#mic span').textContent = t('listening'); $('#vtext').textContent = '';
+  rec.onresult = e => { let txt = ''; for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript; last = txt; $('#vtext').textContent = txt };
+  rec.onerror = e => { const blocked = e.error === 'not-allowed' || e.error === 'service-not-allowed'; $('#vtext').textContent = t(blocked ? 'micblock' : e.error === 'no-speech' ? 'nospeech' : 'micerr'); if (blocked) { const i = $('#in-voice'); if (i && i.focus) i.focus() } };
+  rec.onend = () => { $('#blob').classList.remove('on'); $('#mic span').textContent = t('speak'); rec = null; if (last.trim()) runVoice(last.trim()) };
+  try { rec.start() } catch { rec = null; $('#blob').classList.remove('on'); $('#vtext').textContent = t('micerr') }
+}
+function typeVoice() { const i = $('#in-voice'), x = i.value.trim(); if (!x) return; i.value = ''; runVoice(x) }
+
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('button,li'); if (!el) return;
+  if (el.hasAttribute('data-remind')) { show('typemsg'); postMissing(); return }
+  if (el.dataset.go) return show(el.dataset.go);
+  if (el.hasAttribute('data-back')) return back();
+  if (el.dataset.auth) return openAuth(el.dataset.auth);
+  if (el.dataset.report) { rmode = el.dataset.report; return show('report') }
+  if (el.dataset.per) { period = el.dataset.per; return renderReport() }
+  if (el.dataset.send) return send(el.dataset.send);
+  if (el.dataset.l) { S.lang = el.dataset.l; meta(); applyLang(); if (S.user) back(); else back(); return }
+  if (el.hasAttribute('data-due')) { show('khata'); return }
+  if (el.dataset.eact) { const c = el.closest('.card'), id = c.dataset.eid; if (el.dataset.sure) { D.expenses = (D.expenses || []).filter(z => String(z.id) !== id); persist(); renderReport(); renderDash() } else { el.dataset.sure = 1; el.textContent = '✔' } return }
+  if (el.dataset.kmact) {
+    const row = el.closest('.khm'), n = row.dataset.n, ka = el.dataset.kmact;
+    if (ka === 'edit') { row.outerHTML = khMeta(n, true); return }
+    if (ka === 'save') { const m = kmeta(n), ev = Number(row.querySelector('[data-km=every]').value); m.phone = cleanPhone(row.querySelector('[data-km=phone]').value); if (ev >= 1) m.every = Math.round(ev); const tv = row.querySelector('[data-km=time]'); if (tv && tv.value) m.time = tv.value; persist(); renderKhata(); renderDash(); return }
+    if (ka === 'send') { if (!kmeta(n).phone) { row.outerHTML = khMeta(n, true); return } openKmsg(n); return }
+  }
+  if (el.dataset.kact) {
+    const row = el.closest('.khe'), n = row.dataset.n, arr = khArr(n), x = arr.find(z => String(z.id) === row.dataset.id), ka = el.dataset.kact;
+    if (!x) return;
+    if (ka === 'edit') row.outerHTML = khEdit(n, x);
+    if (ka === 'del') { if (el.dataset.sure) { D.khata[n] = arr.filter(z => z !== x); if (!D.khata[n].length) delete D.khata[n]; persist(); renderKhata() } else { el.dataset.sure = 1; el.textContent = '✔' } }
+    if (ka === 'save') { const am = Number(row.querySelector('[data-kf=amount]').value), dt = row.querySelector('[data-kf=date]').value; if (!isNaN(am)) x.amount = am; if (dt) x.date = dt; persist(); renderKhata() }
+    return;
+  }
+  const c = el.closest('.card'), act = el.dataset.act;
+  if (c && act) {
+    const e = D.entries.find(z => z.id == c.dataset.id);
+    if (act === 'edit') c.outerHTML = card(e, true);
+    if (act === 'del') { if (el.dataset.sure) { D.entries = D.entries.filter(z => z !== e); persist(); renderReport() } else { el.dataset.sure = 1; el.textContent = '✔ ' + t('del') } }
+    if (act === 'save') { c.querySelectorAll('[data-f]').forEach(i => { if (i.dataset.f !== 'pro' && i.value !== '') e[i.dataset.f] = Number(i.value); else if (i.dataset.f === 'buy') e.buy = null }); persist(); renderReport() }
+  }
+});
+document.addEventListener('input', ev => {
+  const c = ev.target.closest('.card'); if (!c) return;
+  const v = f => c.querySelector(`[data-f=${f}]`).value, b = v('buy');
+  c.querySelector('[data-f=pro]').value = b === '' ? '' : r2((Number(v('sell')) - Number(b)) * Number(v('qty')));
+});
+const on = (sel, ev, fn) => { const el = $(sel); if (el) el.addEventListener(ev, fn) };
+on('#lsearch', 'input', renderLangs);
+on('#authgo', 'click', submitAuth);
+on('#eye', 'click', () => $('#pass').type = $('#pass').type === 'password' ? 'text' : 'password');
+on('#mic', 'click', listen);
+on('#blob', 'click', listen);
+on('#vsend', 'click', typeVoice);
+on('#tourbtn', 'click', tourOpen);
+on('#remtoggle', 'click', () => setRem(!remOn()));
+on('#permyes', 'click', () => { D.prefs = Object.assign(D.prefs || {}, { remind: true }); persist(); $('#perm').hidden = true; renderDash(); renderKhata() });
+on('#permno', 'click', () => { D.prefs = Object.assign(D.prefs || {}, { remind: false }); persist(); $('#perm').hidden = true; renderDash(); renderKhata() });
+on('#tournext', 'click', tourNext);
+on('#tourskip', 'click', tourClose);
+on('#kmsgtxt', 'input', kmLinks);
+on('#kmsgsms', 'click', markSent);
+on('#kmsgwa', 'click', markSent);
+on('#kmsgx', 'click', () => { $('#kmsgbox').hidden = true; kmsgFor = null });
+on('#kmsgcopy', 'click', async () => { const tx = $('#kmsgtxt'); try { await navigator.clipboard.writeText(tx.value) } catch { tx.select(); try { document.execCommand('copy') } catch { } } $('#kmsgcopy').textContent = t('kcopied'); setTimeout(() => { $('#kmsgcopy').textContent = t('kcopy') }, 1500) });
+on('#saveprof', 'click', () => { 
+  const shop = $('#set-shop').value.trim(), ph = cleanPhone($('#set-phone').value), curSymbol = $('#set-currency').value; 
+  if (!shop) return $('#profmsg').textContent = t('needshop'); 
+  if (!ph) return $('#profmsg').textContent = t('needphone'); 
+  D.profile = { shop, phone: ph }; 
+  S.currency = curSymbol;
+  meta(); persist(); 
+  renderDash();
+  $('#profmsg').textContent = t('saved'); 
+});
+on('#in-voice', 'keydown', e => { if (e.key === 'Enter') typeVoice() });
+on('#rdate', 'change', renderReport);
+on('#logout', 'click', () => { ['#log-type', '#log-ask'].forEach(q => { const l = $(q); if (l) l.querySelectorAll('.msg:not(.hint)').forEach(x => x.remove()) }); listAsk = null; S.user = null; meta(); D = { entries: [], khata: {} }; stack = ['home']; show('home', false) });
+['type', 'ask'].forEach(m => on('#in-' + m, 'keydown', e => { if (e.key === 'Enter') send(m) }));
+
+const missing = ['home', 'lang', 'auth', 'dash', 'typemsg', 'qbox', 'vscreen', 'report', 'khata', 'settings'].filter(id => !document.getElementById(id));
+if (missing.length) document.body.insertAdjacentHTML('afterbegin', '<p style="background:#d1344b;color:#fff;padding:10px;margin:0">HTML panel mein ye sections nahi mile: ' + missing.join(', ') + '</p>');
+
+let lastDay = today();
+function dayTick() {
+  const n = today(); if (n === lastDay) return;
+  const r = $('#rdate'); if (r && r.value === lastDay) r.value = n;
+  lastDay = n; renderDash(); postMissing();
+  if ($('#report') && $('#report').classList.contains('on')) renderReport();
+}
+setInterval(dayTick, 30000);
+document.addEventListener('visibilitychange', dayTick);
+window.addEventListener('focus', dayTick);
+
+applyLang();
+if (S.user && load('dm_users', {})[S.user]) { D = load('dm_data_' + S.user, D); stack = ['dash']; show('dash', false); postMissing() }
+setTimeout(() => { if (S.user && $('#tour').hidden) permCheck() }, 800);
+</script>
+</body>
+</html>
